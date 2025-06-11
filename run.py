@@ -11,7 +11,7 @@ load_dotenv()
 Path("logs").mkdir(exist_ok=True)
 
 # Determina o ambiente
-config_name = os.getenv('FLASK_ENV', 'development')
+config_name = os.getenv('FLASK_ENV', 'production')
 app = create_app(config_name)
 
 if __name__ == '__main__':
