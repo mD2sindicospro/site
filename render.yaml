@@ -17,6 +17,8 @@ services:
         fromDatabase:
           name: site-m2d-db
           property: connectionString
+    healthCheckPath: /
+    autoDeploy: true
 
 databases:
   - name: site-m2d-db

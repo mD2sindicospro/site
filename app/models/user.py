@@ -40,7 +40,7 @@ class User(UserMixin, db.Model):
         
         if role not in self.VALID_ROLES:
             raise ValueError(f"Papel inválido. Papéis válidos são: {', '.join(self.VALID_ROLES)}")
-        
+            
         self.username = username
         self.email = email
         self.role = role

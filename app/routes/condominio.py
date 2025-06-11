@@ -13,17 +13,17 @@ def create():
     if current_user.role not in ['admin', 'supervisor']:
         flash('Você não tem permissão para criar condomínios', 'danger')
         return redirect(url_for('main.home'))
-
+    
     if request.method == 'POST':
         nome = request.form.get('nome')
         endereco = request.form.get('endereco')
         numero_apartamentos = request.form.get('numero_apartamentos')
         supervisor_id = current_user.id if current_user.role == 'supervisor' else request.form.get('supervisor_id')
-
+        
         if not all([nome, endereco, numero_apartamentos]):
             flash('Todos os campos são obrigatórios', 'danger')
             return redirect(url_for('condominio.list'))
-
+        
         try:
             numero_apartamentos = int(numero_apartamentos)
             if numero_apartamentos <= 0:
@@ -31,23 +31,23 @@ def create():
         except ValueError as e:
             flash(str(e), 'danger')
             return redirect(url_for('condominio.list'))
-
+        
         try:
-            condominio = Condominio(
-                nome=nome,
-                endereco=endereco,
-                numero_apartamentos=numero_apartamentos,
+        condominio = Condominio(
+            nome=nome,
+            endereco=endereco,
+            numero_apartamentos=numero_apartamentos,
                 supervisor_id=supervisor_id
-            )
-            db.session.add(condominio)
-            db.session.commit()
+        )
+        db.session.add(condominio)
+        db.session.commit()
             flash('Condomínio criado com sucesso', 'success')
             return redirect(url_for('condominio.list'))
         except Exception as e:
             db.session.rollback()
             flash(f'Erro ao criar condomínio: {str(e)}', 'danger')
-            return redirect(url_for('condominio.list'))
-
+        return redirect(url_for('condominio.list'))
+    
     supervisores = User.query.filter_by(role='supervisor', is_active=True).all()
     return render_template('condominio/create.html', supervisores=supervisores)
 
