@@ -1,0 +1,417 @@
+{% extends "base.html" %}
+
+{% block title %}Início - Sistema de Gestão de Condomínios{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    <div class="row mb-2">
+        <div class="col-12">
+            <div class="card shadow mb-3">
+                <div class="card-header py-3 rounded-top text-center">
+                    <h6 class="m-0 font-weight-bold text-white">Seus dados, {{ current_user.username }}</h6>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mb-4 justify-content-center">
+        {% if current_user.role in ['admin', 'supervisor'] %}
+            <div class="col-12 d-flex justify-content-center flex-wrap gap-2 px-0" style="max-width: 100%;">
+                <div class="card shadow h-100 py-2 flex-fill" style="min-width: 150px; max-width: 180px; margin: 2px;">
+                    <div class="card-body py-2 px-2">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="text-xs fw-bold text-uppercase mb-1" style="font-size:0.85em; color: var(--primary-color);">Condomínios</div>
+                                <div class="fw-bold" style="font-size:1.1em; color: var(--primary-color);">{{ total_condominios_supervisor }}</div>
+                            </div>
+                            <i class="fas fa-building" style="font-size:1.1em; color: var(--primary-color);"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card shadow h-100 py-2 flex-fill" style="min-width: 150px; max-width: 180px; margin: 2px;">
+                    <div class="card-body py-2 px-2">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="text-xs fw-bold text-uppercase mb-1" style="font-size:0.85em; color: #7b8a97;">Pendentes</div>
+                                <div class="fw-bold" style="font-size:1.1em; color: #7b8a97;">{{ percentual_pendentes }}%</div>
+                            </div>
+                            <i class="fas fa-hourglass-half" style="font-size:1.1em; color: #7b8a97;"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card shadow h-100 py-2 flex-fill" style="min-width: 150px; max-width: 180px; margin: 2px;">
+                    <div class="card-body py-2 px-2">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="text-xs fw-bold text-uppercase mb-1" style="font-size:0.85em; color: #ff9800;">Em Andamento</div>
+                                <div class="fw-bold" style="font-size:1.1em; color: #ff9800;">{{ percentual_andamento }}%</div>
+                            </div>
+                            <i class="fas fa-spinner" style="font-size:1.1em; color: #ff9800;"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card shadow h-100 py-2 flex-fill" style="min-width: 150px; max-width: 180px; margin: 2px;">
+                    <div class="card-body py-2 px-2">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="text-xs fw-bold text-uppercase mb-1" style="font-size:0.85em; color: var(--danger-color);">Atrasadas</div>
+                                <div class="fw-bold" style="font-size:1.1em; color: var(--danger-color);">{{ percentual_atrasadas }}%</div>
+                            </div>
+                            <i class="fas fa-exclamation-triangle" style="font-size:1.1em; color: var(--danger-color);"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card shadow h-100 py-2 flex-fill" style="min-width: 150px; max-width: 180px; margin: 2px;">
+                    <div class="card-body py-2 px-2">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="text-xs fw-bold text-uppercase mb-1" style="font-size:0.85em; color: var(--success-color);">Concluídas</div>
+                                <div class="fw-bold" style="font-size:1.1em; color: var(--success-color);">{{ percentual_concluidas }}%</div>
+                            </div>
+                            <i class="fas fa-check-circle" style="font-size:1.1em; color: var(--success-color);"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card shadow h-100 py-2 flex-fill" style="min-width: 150px; max-width: 180px; margin: 2px;">
+                    <div class="card-body py-2 px-2">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="text-xs fw-bold text-uppercase mb-1" style="font-size:0.85em; color: #c0392b;">Não Realizadas</div>
+                                <div class="fw-bold" style="font-size:1.1em; color: #c0392b;">{{ percentual_nao_realizadas }}%</div>
+                            </div>
+                            <i class="fas fa-times-circle" style="font-size:1.1em; color: #c0392b;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% elif current_user.role == 'normal' %}
+            <div class="col-12 d-flex justify-content-center flex-wrap px-0" style="max-width: 100%;">
+                <div class="card shadow h-100 py-2 flex-fill mx-2" style="min-width: 220px; max-width: 100%;">
+                    <div class="card-body py-3 px-2">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="text-xs fw-bold text-uppercase mb-1" style="font-size:0.95em; color: #7b8a97;">Pendentes</div>
+                                <div class="fw-bold" style="font-size:1.3em; color: #7b8a97;">{{ percentual_pendentes }}%</div>
+                            </div>
+                            <i class="fas fa-hourglass-half" style="font-size:1.3em; color: #7b8a97;"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card shadow h-100 py-2 flex-fill mx-2" style="min-width: 220px; max-width: 100%;">
+                    <div class="card-body py-3 px-2">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="text-xs fw-bold text-uppercase mb-1" style="font-size:0.95em; color: #ff9800;">Em Andamento</div>
+                                <div class="fw-bold" style="font-size:1.3em; color: #ff9800;">{{ percentual_andamento }}%</div>
+                            </div>
+                            <i class="fas fa-spinner" style="font-size:1.3em; color: #ff9800;"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card shadow h-100 py-2 flex-fill mx-2" style="min-width: 220px; max-width: 100%;">
+                    <div class="card-body py-3 px-2">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="text-xs fw-bold text-uppercase mb-1" style="font-size:0.95em; color: var(--danger-color);">Atrasadas</div>
+                                <div class="fw-bold" style="font-size:1.3em; color: var(--danger-color);">{{ percentual_atrasadas }}%</div>
+                            </div>
+                            <i class="fas fa-exclamation-triangle" style="font-size:1.3em; color: var(--danger-color);"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card shadow h-100 py-2 flex-fill mx-2" style="min-width: 220px; max-width: 100%;">
+                    <div class="card-body py-3 px-2">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="text-xs fw-bold text-uppercase mb-1" style="font-size:0.95em; color: var(--success-color);">Concluídas</div>
+                                <div class="fw-bold" style="font-size:1.3em; color: var(--success-color);">{{ percentual_concluidas }}%</div>
+                            </div>
+                            <i class="fas fa-check-circle" style="font-size:1.3em; color: var(--success-color);"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card shadow h-100 py-2 flex-fill mx-2" style="min-width: 220px; max-width: 100%;">
+                    <div class="card-body py-3 px-2">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="text-xs fw-bold text-uppercase mb-1" style="font-size:0.95em; color: #c0392b;">Não Realizadas</div>
+                                <div class="fw-bold" style="font-size:1.3em; color: #c0392b;">{{ percentual_nao_realizadas }}%</div>
+                            </div>
+                            <i class="fas fa-times-circle" style="font-size:1.3em; color: #c0392b;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <!-- Cartões antigos para outros tipos de usuário -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs fw-bold text-uppercase mb-1" style="color: var(--primary-color);">
+                                    Condomínios
+                                </div>
+                                <div class="h4 mb-0 fw-bold" style="color: var(--primary-color);">{{ condominios_count|default(0) }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-building fa-2x" style="color: var(--primary-color);"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs fw-bold text-uppercase mb-1" style="color: var(--danger-color);">
+                                    Atrasadas
+                                </div>
+                                <div class="h4 mb-0 fw-bold" style="color: var(--danger-color);">{{ tarefas_atrasadas|default(0) }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-exclamation-triangle fa-2x" style="color: var(--danger-color);"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs fw-bold text-uppercase mb-1" style="color: #ff9800;">
+                                    Em Andamento
+                                </div>
+                                <div class="h4 mb-0 fw-bold" style="color: #ff9800;">{{ tarefas_andamento|default(0) }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-spinner fa-2x" style="color: #ff9800;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs fw-bold text-uppercase mb-1" style="color: var(--success-color);">
+                                    Concluídas
+                                </div>
+                                <div class="h4 mb-0 fw-bold" style="color: var(--success-color);">{{ tarefas_concluidas|default(0) }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-check-circle fa-2x" style="color: var(--success-color);"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Últimas Atividades -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 rounded-top text-center">
+                    <h6 class="m-0 font-weight-bold text-white">RELATORIO DE ATIVIDADES - GERAL</h6>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-bordered text-center align-middle table-atividades" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Condomínio</th>
+                            <th>Lançamento</th>
+                            <th>Responsável</th>
+                            <th>Atividade</th>
+                            <th>Entregar em</th>
+                            <th>Prazo</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if atividades %}
+                            {% for atividade in atividades %}
+                            <tr>
+                                <td>{{ atividade.condominio.nome if atividade.condominio else '—' }}</td>
+                                <td>{% if atividade.data_lancamento %}{{ atividade.data_lancamento.strftime('%d/%m/%y') }}{% else %}—{% endif %}</td>
+                                <td>{{ atividade.responsavel.username if atividade.responsavel else '—' }}</td>
+                                <td>{{ atividade.atividade }}</td>
+                                <td>{% if atividade.data_entrega %}{{ atividade.data_entrega.strftime('%d/%m/%y') }}{% else %}—{% endif %}</td>
+                                <td>{% if atividade.status in ['realizada', 'não realizada', 'finalizada', 'atrasada'] %}—{% elif atividade.data_entrega and atividade.data_entrega >= current_date %}{{ prazo_humano(current_date, atividade.data_entrega) }}{% else %}—{% endif %}</td>
+                                <td>
+                                    <span class="badge badge-status-{{ atividade.status.replace(' ', '-').lower() }}" style="font-size:1.1em;">{{ atividade.status.upper() }}</span>
+                                </td>
+                            </tr>
+                            <!-- Modal Visualizar Atividade -->
+                            <div class="modal fade" id="modalVisualizar{{ atividade.id }}" tabindex="-1" aria-labelledby="modalVisualizarLabel{{ atividade.id }}" aria-hidden="true">
+                              <div class="modal-dialog modal-lg modal-dialog-centered">
+                                <div class="modal-content shadow-lg rounded-4 border-0">
+                                  <div class="modal-header" style="background: #11141b; color: #fff; border-top-left-radius: 1rem; border-top-right-radius: 1rem;">
+                                    <h5 class="modal-title fw-bold" id="modalVisualizarLabel{{ atividade.id }}">
+                                      <i class="fas fa-tasks me-2"></i>Detalhes da Atividade
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                                  </div>
+                                  <div class="modal-body p-4">
+                                    <div class="row g-3">
+                                      <div class="col-12">
+                                        <div class="mb-2"><i class="fas fa-building me-1 text-secondary"></i> <strong>Condomínio:</strong></div>
+                                        <div>{{ atividade.condominio.nome if atividade.condominio else '—' }}</div>
+                                      </div>
+                                      <div class="col-12 col-md-6">
+                                        <div class="mb-2"><i class="fas fa-tasks me-1 text-secondary"></i> <strong>Atividade:</strong></div>
+                                        <div>{{ atividade.atividade }}</div>
+                                      </div>
+                                      <div class="col-12 col-md-6">
+                                        <div class="mb-2"><i class="fas fa-calendar-plus me-1 text-secondary"></i> <strong>Lançamento:</strong></div>
+                                        <div>{% if atividade.data_lancamento %}{{ atividade.data_lancamento.strftime('%d/%m/%y') }}{% else %}—{% endif %}</div>
+                                      </div>
+                                      <div class="col-12 col-md-6">
+                                        <div class="mb-2"><i class="fas fa-user me-1 text-secondary"></i> <strong>Responsável:</strong></div>
+                                        <div>{{ atividade.responsavel.username if atividade.responsavel else '—' }}</div>
+                                      </div>
+                                      <div class="col-12 col-md-6">
+                                        <div class="mb-2"><i class="fas fa-calendar-alt me-1 text-secondary"></i> <strong>Entregar em:</strong></div>
+                                        <div>{% if atividade.data_entrega %}{{ atividade.data_entrega.strftime('%d/%m/%y') }}{% else %}—{% endif %}</div>
+                                      </div>
+                                      <div class="col-12">
+                                        <div class="mb-2"><i class="fas fa-align-left me-1 text-secondary"></i> <strong>Descrição:</strong></div>
+                                        <div>{{ atividade.descricao }}</div>
+                                      </div>
+                                      <div class="col-12 col-md-6">
+                                        <div class="mb-2"><i class="fas fa-flag me-1 text-secondary"></i> <strong>Status:</strong></div>
+                                        <div><span class="badge badge-status-{{ atividade.status.replace(' ', '-').lower() }}" style="font-size:1.1em;">{{ atividade.status.upper() }}</span></div>
+                                      </div>
+                                      {% if atividade.aprovado_por %}
+                                      <div class="col-12 col-md-6">
+                                        <div class="mb-2"><i class="fas fa-user-check me-1 text-secondary"></i> <strong>Aprovado por:</strong></div>
+                                        <div>{{ atividade.aprovado_por.username }}</div>
+                                      </div>
+                                      {% endif %}
+                                    </div>
+                                  </div>
+                                  <div class="modal-footer bg-light rounded-bottom-4">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center">Nenhuma atividade recente</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+            <!-- Paginação -->
+            {% if total_paginas > 1 %}
+            <nav aria-label="Paginação de atividades">
+                <ul class="pagination justify-content-end mt-3">
+                    <li class="page-item {% if pagina_atual == 1 %}disabled{% endif %}">
+                        <a class="page-link" href="?pagina={{ pagina_atual - 1 }}" tabindex="-1">Anterior</a>
+                    </li>
+                    {% for pagina in range(1, total_paginas + 1) %}
+                    <li class="page-item {% if pagina == pagina_atual %}active{% endif %}"><a class="page-link" href="?pagina={{ pagina }}">{{ pagina }}</a></li>
+                    {% endfor %}
+                    <li class="page-item {% if pagina_atual == total_paginas %}disabled{% endif %}">
+                        <a class="page-link" href="?pagina={{ pagina_atual + 1 }}">Próxima</a>
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block modal %}
+<!-- Modal Nova Atividade -->
+<div class="modal fade" id="newActivityModal" tabindex="-1" aria-labelledby="newActivityModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="newActivityModalLabel">Nova Atividade</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <form id="novaAtividadeForm" method="POST" action="{{ url_for('main.home_post') }}">
+            {{ form.csrf_token }}
+            <div class="row g-3">
+                <div class="col-12 col-md-6">
+                    <label class="form-label fw-semibold" for="condominio"><i class="fas fa-building me-1"></i> Condomínio</label>
+                    {{ form.condominio(class="form-select form-control-lg", id="condominio") }}
+                    {% for error in form.condominio.errors %}
+                        <span class="text-danger small">{{ error }}</span>
+                    {% endfor %}
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label fw-semibold" for="responsavel"><i class="fas fa-user me-1"></i> Responsável</label>
+                    {{ form.responsavel(class="form-select form-control-lg", id="responsavel") }}
+                    {% for error in form.responsavel.errors %}
+                        <span class="text-danger small">{{ error }}</span>
+                    {% endfor %}
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold" for="atividade"><i class="fas fa-tasks me-1"></i> Atividade</label>
+                    {{ form.atividade(class="form-control form-control-lg", id="atividade", maxlength="100", placeholder="Título da atividade") }}
+                    {% for error in form.atividade.errors %}
+                        <span class="text-danger small">{{ error }}</span>
+                    {% endfor %}
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold" for="descricao"><i class="fas fa-align-left me-1"></i> Descrição</label>
+                    {{ form.descricao(class="form-control form-control-lg", id="descricao", rows=3, placeholder="Descreva brevemente a atividade a ser realizada.") }}
+                    {% for error in form.descricao.errors %}
+                        <span class="text-danger small">{{ error }}</span>
+                    {% endfor %}
+                </div>
+                <div class="col-12 col-md-6 d-flex flex-column justify-content-end">
+                    <label class="form-label fw-semibold" for="data_entrega"><i class="fas fa-calendar-alt me-1"></i> Data da Entrega</label>
+                    <input type="text" name="data_entrega" id="data_entrega" class="form-control form-control-lg" placeholder="dd/mm/aaaa" maxlength="10" autocomplete="off" value="{{ form.data_entrega.data.strftime('%d/%m/%Y') if form.data_entrega.data else '' }}">
+                    {% for error in form.data_entrega.errors %}
+                        <span class="text-danger small">{{ error }}</span>
+                    {% endfor %}
+                </div>
+                <div class="col-12 col-md-6 d-flex align-items-end justify-content-end gap-2 mt-3 mt-md-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times me-1"></i> Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-check me-1"></i> Criar Atividade</button>
+                </div>
+            </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/js/bootstrap-datepicker.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/css/bootstrap-datepicker3.min.css">
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    $('#data_entrega').datepicker({
+      format: 'dd/mm/yyyy',
+      language: 'pt-BR',
+      autoclose: true,
+      todayHighlight: true
+    });
+  });
+</script>
+{% endblock %} 

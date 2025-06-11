@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}Nova Atividade{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm mt-4">
+            <div class="card-header">
+                <h4 class="mb-0">Nova Atividade</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ form.condominio.label(class="form-label") }}
+                        {{ form.condominio(class="form-select") }}
+                        {% for error in form.condominio.errors %}
+                            <span class="text-danger small">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.responsavel.label(class="form-label") }}
+                        {{ form.responsavel(class="form-select") }}
+                        {% for error in form.responsavel.errors %}
+                            <span class="text-danger small">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.descricao.label(class="form-label") }}
+                        {{ form.descricao(class="form-control", rows=3) }}
+                        {% for error in form.descricao.errors %}
+                            <span class="text-danger small">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.data_entrega.label(class="form-label") }}
+                        {{ form.data_entrega(class="form-control", type="date") }}
+                        {% for error in form.data_entrega.errors %}
+                            <span class="text-danger small">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    <div class="d-grid gap-2">
+                        {{ form.submit(class="btn btn-primary") }}
+                        <a href="{{ url_for('main.home') }}" class="btn btn-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

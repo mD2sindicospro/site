@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Novo Condomínio{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0">Novo Condomínio</h2>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="nome" class="form-label">Nome do Condomínio</label>
+                        <input type="text" class="form-control" id="nome" name="nome" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="endereco" class="form-label">Endereço</label>
+                        <input type="text" class="form-control" id="endereco" name="endereco" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="numero_apartamentos" class="form-label">Número de Apartamentos</label>
+                        <input type="number" class="form-control" id="numero_apartamentos" name="numero_apartamentos" required>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Cadastrar</button>
+                        <a href="{{ url_for('condominio.listar_condominios') }}" class="btn btn-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  function formatarTelefone(valor) {
+    if (!valor) return '';
+    valor = valor.replace(/\D/g, '');
+    if (valor.length >= 11) {
+      return '(' + valor.substr(0,2) + ') ' + valor.substr(2,5) + '-' + valor.substr(7,4);
+    } else if (valor.length >= 10) {
+      return '(' + valor.substr(0,2) + ') ' + valor.substr(2,4) + '-' + valor.substr(6,4);
+    }
+    return valor;
+  }
+  $('#contato').mask('(00) 00000-0000');
+  $('#contato').on('blur', function() {
+    $(this).val(formatarTelefone($(this).val()));
+  });
+});
+</script>
+{% endblock %} 

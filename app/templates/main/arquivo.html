@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Arquivo de Atividades{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-3 justify-content-center">
+        <div class="col-12 col-md-8 col-lg-10">
+            <form method="get">
+                <div class="row g-2 align-items-end mb-2">
+                    <div class="col-md-6">
+                        <label for="filtro_condominio" class="form-label mb-1">Condomínio</label>
+                        <select id="filtro_condominio" name="condominio" class="form-select">
+                            <option value="">Todos</option>
+                            {% for c in form.condominio.choices %}
+                                <option value="{{ c[0] }}" {% if request.args.get('condominio')|int == c[0] %}selected{% endif %}>{{ c[1] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="filtro_status" class="form-label mb-1">Status</label>
+                        <select id="filtro_status" name="status" class="form-select">
+                            <option value="">Todos</option>
+                            <option value="finalizada" {% if request.args.get('status') == 'finalizada' %}selected{% endif %}>Finalizada</option>
+                            <option value="não realizada" {% if request.args.get('status') == 'não realizada' %}selected{% endif %}>Não Realizada</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <label for="data_lancamento_inicio" class="form-label mb-1">Lançamento de</label>
+                        <input type="text" id="data_lancamento_inicio" name="data_lancamento_inicio" class="form-control datepicker-br" placeholder="dd/mm/aaaa" value="{{ request.args.get('data_lancamento_inicio', '') }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="data_lancamento_fim" class="form-label mb-1">Até</label>
+                        <input type="text" id="data_lancamento_fim" name="data_lancamento_fim" class="form-control datepicker-br" placeholder="dd/mm/aaaa" value="{{ request.args.get('data_lancamento_fim', '') }}">
+                    </div>
+                    <div class="col-md-6 d-flex justify-content-end gap-2 align-items-end">
+                        <a href="{{ url_for('main.arquivo') }}" class="btn btn-secondary">Limpar Filtros</a>
+                        <button type="submit" class="btn btn-primary">Filtrar</button>
+                        <a href="{{ url_for('main.exportar_excel', condominio=request.args.get('condominio'), status=request.args.get('status'), data_lancamento_inicio=request.args.get('data_lancamento_inicio'), data_lancamento_fim=request.args.get('data_lancamento_fim')) }}" class="btn btn-success"><i class="fas fa-file-excel me-1"></i> Exportar Excel</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 rounded-top text-center">
+                    <h6 class="m-0 font-weight-bold text-white" style="text-transform: uppercase;">Atividades Arquivadas</h6>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-bordered text-center align-middle table-atividades" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Condomínio</th>
+                            <th>Lançamento</th>
+                            <th>Responsável</th>
+                            <th>Atividade</th>
+                            <th>Entregar em</th>
+                            <th>Concluída em</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if atividades %}
+                            {% for atividade in atividades %}
+                            <tr>
+                                <td>{{ atividade.condominio.nome if atividade.condominio else '—' }}</td>
+                                <td>{% if atividade.data_lancamento %}{{ atividade.data_lancamento.strftime('%d/%m/%y') }}{% else %}—{% endif %}</td>
+                                <td>{{ atividade.responsavel.username if atividade.responsavel else '—' }}</td>
+                                <td>{{ atividade.atividade }}</td>
+                                <td>{% if atividade.data_entrega %}{{ atividade.data_entrega.strftime('%d/%m/%y') }}{% else %}—{% endif %}</td>
+                                <td>
+                                    {% if atividade.status == 'finalizada' and atividade.data_conclusao %}
+                                        {{ atividade.data_conclusao.strftime('%d/%m/%y') }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge badge-status-{{ atividade.status.replace(' ', '-').lower() }}">{{ atividade.status.upper() }}</span>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#modalVisualizar{{ atividade.id }}" title="Visualizar"><i class="fas fa-eye"></i></button>
+                                </td>
+                            </tr>
+                            <!-- Modal Visualizar Atividade -->
+                            <div class="modal fade" id="modalVisualizar{{ atividade.id }}" tabindex="-1" aria-labelledby="modalVisualizarLabel{{ atividade.id }}" aria-hidden="true">
+                              <div class="modal-dialog modal-lg modal-dialog-centered">
+                                <div class="modal-content shadow-lg rounded-4 border-0">
+                                  <div class="modal-header" style="background: #11141b; color: #fff; border-top-left-radius: 1rem; border-top-right-radius: 1rem;">
+                                    <h5 class="modal-title fw-bold" id="modalVisualizarLabel{{ atividade.id }}">
+                                      <i class="fas fa-tasks me-2"></i>Detalhes da Atividade
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                                  </div>
+                                  <div class="modal-body p-4">
+                                    <div class="row g-3">
+                                      <div class="col-12">
+                                        <div class="mb-2"><i class="fas fa-building me-1 text-secondary"></i> <strong>Condomínio:</strong></div>
+                                        <div>{{ atividade.condominio.nome if atividade.condominio else '—' }}</div>
+                                      </div>
+                                      <div class="col-12 col-md-6">
+                                        <div class="mb-2"><i class="fas fa-tasks me-1 text-secondary"></i> <strong>Atividade:</strong></div>
+                                        <div>{{ atividade.atividade }}</div>
+                                      </div>
+                                      <div class="col-12 col-md-6">
+                                        <div class="mb-2"><i class="fas fa-calendar-plus me-1 text-secondary"></i> <strong>Lançamento:</strong></div>
+                                        <div>{% if atividade.data_lancamento %}{{ atividade.data_lancamento.strftime('%d/%m/%y') }}{% else %}—{% endif %}</div>
+                                      </div>
+                                      <div class="col-12 col-md-6">
+                                        <div class="mb-2"><i class="fas fa-user me-1 text-secondary"></i> <strong>Responsável:</strong></div>
+                                        <div>{{ atividade.responsavel.username if atividade.responsavel else '—' }}</div>
+                                      </div>
+                                      <div class="col-12 col-md-6">
+                                        <div class="mb-2"><i class="fas fa-calendar-alt me-1 text-secondary"></i> <strong>Entregar em:</strong></div>
+                                        <div>{% if atividade.data_entrega %}{{ atividade.data_entrega.strftime('%d/%m/%y') }}{% else %}—{% endif %}</div>
+                                      </div>
+                                      <div class="col-12">
+                                        <div class="mb-2"><i class="fas fa-align-left me-1 text-secondary"></i> <strong>Descrição:</strong></div>
+                                        <div>{{ atividade.descricao }}</div>
+                                      </div>
+                                      <div class="col-12 col-md-6">
+                                        <div class="mb-2"><i class="fas fa-flag me-1 text-secondary"></i> <strong>Status:</strong></div>
+                                        <div><span class="badge badge-status-{{ atividade.status.replace(' ', '-').lower() }}" style="font-size:1.1em;">{{ atividade.status.upper() }}</span></div>
+                                      </div>
+                                      {% if atividade.motivo_desistencia %}
+                                      <div class="col-12">
+                                        <div class="alert alert-warning mt-2 mb-0 fw-semibold" style="font-size:1.05em;">
+                                          <i class="fas fa-exclamation-triangle me-1"></i>
+                                          Motivo do cancelamento: {{ atividade.motivo_desistencia }}
+                                        </div>
+                                      </div>
+                                      {% endif %}
+                                      {% if atividade.aprovado_por %}
+                                      <div class="col-12 col-md-6">
+                                        <div class="mb-2"><i class="fas fa-user-check me-1 text-secondary"></i> <strong>Aprovado por:</strong></div>
+                                        <div>{{ atividade.aprovado_por.username }}</div>
+                                      </div>
+                                      {% endif %}
+                                    </div>
+                                  </div>
+                                  <div class="modal-footer bg-light rounded-bottom-4">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center">Nenhuma atividade arquivada</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+            {% if total_paginas > 1 %}
+            <nav aria-label="Paginação de atividades">
+                <ul class="pagination justify-content-end mt-3">
+                    <li class="page-item {% if pagina_atual == 1 %}disabled{% endif %}">
+                        <a class="page-link" href="?pagina={{ pagina_atual - 1 }}" tabindex="-1">Anterior</a>
+                    </li>
+                    {% for pagina in range(1, total_paginas + 1) %}
+                    <li class="page-item {% if pagina == pagina_atual %}active{% endif %}"><a class="page-link" href="?pagina={{ pagina }}">{{ pagina }}</a></li>
+                    {% endfor %}
+                    <li class="page-item {% if pagina_atual == total_paginas %}disabled{% endif %}">
+                        <a class="page-link" href="?pagina={{ pagina_atual + 1 }}">Próxima</a>
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+<style>
+.badge-status-pendente, .badge-status-em-andamento, .badge-status-ultimo-dia, .badge-status-atrasada, .badge-status-realizada, .badge-status-finalizada, .badge-status-não-realizada {
+    padding: 0.25em 0.6em !important;
+    font-size: 0.85em !important;
+    border-radius: 6px;
+}
+.badge-status-pendente { background: #7b8a97 !important; color: #fff; }
+.badge-status-em-andamento { background: #ff9800 !important; color: #fff; }
+.badge-status-ultimo-dia { background: #ff5252 !important; color: #fff; }
+.badge-status-atrasada { background: #c0392b !important; color: #fff; }
+.badge-status-realizada { background: #6ee7b7 !important; color: #222; }
+.badge-status-finalizada { background: #2ecc71 !important; color: #fff; }
+.badge-status-não-realizada { background: #c0392b !important; color: #fff; }
+.table-atividades td, .table-atividades th { font-size: 0.95rem; }
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/js/bootstrap-datepicker.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/locales/bootstrap-datepicker.pt-BR.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/css/bootstrap-datepicker3.min.css">
+<script>
+  $(function() {
+    $('.datepicker-br').datepicker({
+      format: 'dd/mm/yyyy',
+      language: 'pt-BR',
+      autoclose: true,
+      todayHighlight: true
+    });
+  });
+</script>
+{% endblock %} 
