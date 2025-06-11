@@ -2,8 +2,10 @@ services:
   - type: web
     name: site-m2d
     env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn wsgi:app
+    buildCommand: |
+      pip install -r requirements.txt
+      flask db upgrade
+    startCommand: gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 4 --timeout 120
     envVars:
       - key: FLASK_APP
         value: wsgi.py
@@ -17,6 +19,8 @@ services:
         fromDatabase:
           name: site-m2d-db
           property: connectionString
+      - key: LOG_TO_STDOUT
+        value: "true"
     healthCheckPath: /
     autoDeploy: true
 
