@@ -5,7 +5,7 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>Gerenciar Usuários</h1>
-    {% if current_user.is_admin() %}
+    {% if current_user.is_admin %}
     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novoUsuarioModal">
         <i class="fas fa-user-plus"></i> Novo Usuário
     </button>
@@ -40,7 +40,7 @@
                 </td>
                 <td>
                     <div class="d-flex justify-content-center gap-2">
-                        {% if current_user.is_admin() or current_user.is_supervisor() %}
+                        {% if current_user.is_admin or current_user.is_supervisor %}
                         <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarUsuarioModal"
                             data-user-id="{{ user.id }}"
                             data-name="{{ user.name }}"
@@ -56,11 +56,11 @@
                             data-bs-toggle="tooltip" data-bs-placement="top" title="Inativar" {% if not user.is_active %}disabled{% endif %}>
                             <i class="fas fa-user-slash"></i>
                         </button>
-                        {% if current_user.is_admin() and user.id != current_user.id %}
+                        {% if current_user.is_admin and user.id != current_user.id %}
                         <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#confirmExcluirModal"
                             data-user-id="{{ user.id }}" data-name="{{ user.name }}"
                             data-bs-toggle="tooltip" data-bs-placement="top" title="Excluir">
-                            <i class="fas fa-trash-alt"></i>
+                            <i class="fas fa-trash"></i>
                         </button>
                         {% endif %}
                     </div>
@@ -73,147 +73,137 @@
 
 <!-- Modal Novo Usuário -->
 <div class="modal fade" id="novoUsuarioModal" tabindex="-1" aria-labelledby="novoUsuarioModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="novoUsuarioModalLabel">Novo Usuário</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-      </div>
-      <div class="modal-body">
-        <form method="POST" action="{{ url_for('admin.manage_users') }}">
-            <div class="row g-3">
-                <div class="col-12 col-md-6">
-                    <label for="name" class="form-label fw-semibold"><i class="fas fa-user me-1"></i> Nome</label>
-                    <input type="text" class="form-control form-control-lg" id="name" name="name" placeholder="Digite o nome" required>
-                </div>
-                <div class="col-12 col-md-6">
-                    <label for="email" class="form-label fw-semibold"><i class="fas fa-envelope me-1"></i> Email</label>
-                    <input type="email" class="form-control form-control-lg" id="email" name="email" placeholder="Digite o email" required>
-                </div>
-                <div class="col-12 col-md-6">
-                    <label for="role" class="form-label fw-semibold"><i class="fas fa-user-tag me-1"></i> Conta</label>
-                    <select class="form-select form-control-lg" id="role" name="role" required>
-                        <option value="user">Normal</option>
-                        <option value="supervisor">Supervisor</option>
-                        <option value="admin">Administrador</option>
-                    </select>
-                </div>
-                <div class="col-12 col-md-6">
-                    <label for="is_active" class="form-label fw-semibold"><i class="fas fa-toggle-on me-1"></i> Status</label>
-                    <select class="form-select form-control-lg" id="is_active" name="is_active" required>
-                        <option value="1">Ativo</option>
-                        <option value="0">Inativo</option>
-                    </select>
-                </div>
-                <div class="col-6">
-                    <label for="password" class="form-label fw-semibold"><i class="fas fa-lock me-1"></i> Senha</label>
-                    <input type="password" class="form-control form-control-lg" id="password" name="password" placeholder="Digite a senha" required>
-                </div>
-                <div class="col-6 d-flex justify-content-end align-items-end gap-2">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times me-1"></i> Cancelar</button>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-check me-1"></i> Cadastrar</button>
-                </div>
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="novoUsuarioModalLabel">Novo Usuário</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-        </form>
-      </div>
+            <div class="modal-body">
+                <form method="POST" action="{{ url_for('admin.manage_users') }}">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label for="name" class="form-label fw-semibold"><i class="fas fa-user me-1"></i> Nome</label>
+                            <input type="text" class="form-control form-control-lg" id="name" name="name" placeholder="Digite o nome" required>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="email" class="form-label fw-semibold"><i class="fas fa-envelope me-1"></i> Email</label>
+                            <input type="email" class="form-control form-control-lg" id="email" name="email" placeholder="Digite o email" required>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="role" class="form-label fw-semibold"><i class="fas fa-user-tag me-1"></i> Conta</label>
+                            <select class="form-select form-control-lg" id="role" name="role" required>
+                                <option value="user">Normal</option>
+                                <option value="supervisor">Supervisor</option>
+                                <option value="admin">Administrador</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="is_active" class="form-label fw-semibold"><i class="fas fa-toggle-on me-1"></i> Status</label>
+                            <select class="form-select form-control-lg" id="is_active" name="is_active" required>
+                                <option value="1">Ativo</option>
+                                <option value="0">Inativo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 
 <!-- Modal Editar Usuário -->
 <div class="modal fade" id="editarUsuarioModal" tabindex="-1" aria-labelledby="editarUsuarioModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="editarUsuarioModalLabel">Editar Usuário</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-      </div>
-      <div class="modal-body">
-        <form id="editarUsuarioForm" method="POST" action="{{ url_for('admin.manage_users') }}">
-            <input type="hidden" id="edit_user_id" name="edit_user_id">
-            <div class="row g-3">
-                <div class="col-12 col-md-6">
-                    <label for="edit_name" class="form-label fw-semibold"><i class="fas fa-user me-1"></i> Nome</label>
-                    <input type="text" class="form-control form-control-lg" id="edit_name" name="edit_name" required>
-                </div>
-                <div class="col-12 col-md-6">
-                    <label for="edit_email" class="form-label fw-semibold"><i class="fas fa-envelope me-1"></i> Email</label>
-                    <input type="email" class="form-control form-control-lg" id="edit_email" name="edit_email" required>
-                </div>
-                <div class="col-12 col-md-6">
-                    <label for="edit_role" class="form-label fw-semibold"><i class="fas fa-user-tag me-1"></i> Conta</label>
-                    <select class="form-select form-control-lg" id="edit_role" name="edit_role" required>
-                        <option value="user">Normal</option>
-                        <option value="supervisor">Supervisor</option>
-                        <option value="admin">Administrador</option>
-                    </select>
-                </div>
-                <div class="col-12 col-md-6">
-                    <label for="edit_is_active" class="form-label fw-semibold"><i class="fas fa-toggle-on me-1"></i> Status</label>
-                    <select class="form-select form-control-lg" id="edit_is_active" name="edit_is_active" required>
-                        <option value="1">Ativo</option>
-                        <option value="0">Inativo</option>
-                    </select>
-                </div>
-                <div class="col-12 col-md-6 d-flex align-items-end gap-2">
-                    <div class="w-100">
-                        <label for="edit_password" class="form-label fw-semibold"><i class="fas fa-lock me-1"></i> Senha</label>
-                        <input type="password" class="form-control form-control-lg" id="edit_password" name="edit_password" placeholder="Deixe em branco para não alterar">
-                    </div>
-                </div>
-                <div class="col-12 col-md-6 d-flex align-items-end justify-content-end gap-2 mt-0 mt-md-3">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times me-1"></i> Cancelar</button>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-check me-1"></i> Salvar</button>
-                </div>
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editarUsuarioModalLabel">Editar Usuário</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-        </form>
-      </div>
+            <div class="modal-body">
+                <form method="POST" action="{{ url_for('admin.manage_users') }}">
+                    <input type="hidden" id="edit_user_id" name="edit_user_id">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label for="edit_name" class="form-label fw-semibold"><i class="fas fa-user me-1"></i> Nome</label>
+                            <input type="text" class="form-control form-control-lg" id="edit_name" name="name" placeholder="Digite o nome" required>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="edit_email" class="form-label fw-semibold"><i class="fas fa-envelope me-1"></i> Email</label>
+                            <input type="email" class="form-control form-control-lg" id="edit_email" name="email" placeholder="Digite o email" required>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="edit_role" class="form-label fw-semibold"><i class="fas fa-user-tag me-1"></i> Conta</label>
+                            <select class="form-select form-control-lg" id="edit_role" name="role" required>
+                                <option value="user">Normal</option>
+                                <option value="supervisor">Supervisor</option>
+                                <option value="admin">Administrador</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="edit_is_active" class="form-label fw-semibold"><i class="fas fa-toggle-on me-1"></i> Status</label>
+                            <select class="form-select form-control-lg" id="edit_is_active" name="edit_is_active" required>
+                                <option value="1">Ativo</option>
+                                <option value="0">Inativo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 
-<!-- Modal Confirmação Inativar Usuário -->
+<!-- Modal Confirmar Inativação -->
 <div class="modal fade" id="confirmInativarModal" tabindex="-1" aria-labelledby="confirmInativarModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="confirmInativarModalLabel">Inativar Usuário</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-      </div>
-      <div class="modal-body">
-        <form method="POST" action="{{ url_for('admin.manage_users') }}">
-          <input type="hidden" id="inativar_user_id" name="inativar_user_id">
-          <p>Tem certeza que deseja inativar o usuário <strong id="inativar_name"></strong>?</p>
-          <div class="d-flex justify-content-end gap-2 mt-4">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-warning">Inativar</button>
-          </div>
-        </form>
-      </div>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmInativarModalLabel">Confirmar Inativação</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja inativar o usuário <strong id="inativar_user_name"></strong>?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="POST" action="{{ url_for('admin.manage_users') }}">
+                    <input type="hidden" id="inativar_user_id" name="inativar_user_id">
+                    <button type="submit" class="btn btn-warning">Inativar</button>
+                </form>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 
-<!-- Modal Confirmação Excluir Usuário -->
+<!-- Modal Confirmar Exclusão -->
 <div class="modal fade" id="confirmExcluirModal" tabindex="-1" aria-labelledby="confirmExcluirModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="confirmExcluirModalLabel">Excluir Usuário</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-      </div>
-      <div class="modal-body">
-        <form method="POST" action="{{ url_for('admin.manage_users') }}">
-          <input type="hidden" id="excluir_user_id" name="excluir_user_id">
-          <p>Tem certeza que deseja <strong class="text-danger">excluir</strong> o usuário <strong id="excluir_name"></strong>? Esta ação não pode ser desfeita.</p>
-          <div class="d-flex justify-content-end gap-2 mt-4">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-danger">Excluir</button>
-          </div>
-        </form>
-      </div>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmExcluirModalLabel">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir o usuário <strong id="excluir_user_name"></strong>?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="POST" action="{{ url_for('admin.manage_users') }}">
+                    <input type="hidden" id="excluir_user_id" name="excluir_user_id">
+                    <button type="submit" class="btn btn-danger">Excluir</button>
+                </form>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 
 <script>
@@ -227,7 +217,6 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('edit_email').value = button.getAttribute('data-email');
       document.getElementById('edit_role').value = button.getAttribute('data-role');
       document.getElementById('edit_is_active').value = button.getAttribute('data-is-active');
-      document.getElementById('edit_password').value = '';
     });
   }
 
@@ -236,7 +225,7 @@ document.addEventListener('DOMContentLoaded', function() {
     confirmInativarModal.addEventListener('show.bs.modal', function (event) {
       var button = event.relatedTarget;
       document.getElementById('inativar_user_id').value = button.getAttribute('data-user-id');
-      document.getElementById('inativar_name').textContent = button.getAttribute('data-name');
+      document.getElementById('inativar_user_name').textContent = button.getAttribute('data-name');
     });
   }
 
@@ -245,7 +234,7 @@ document.addEventListener('DOMContentLoaded', function() {
     confirmExcluirModal.addEventListener('show.bs.modal', function (event) {
       var button = event.relatedTarget;
       document.getElementById('excluir_user_id').value = button.getAttribute('data-user-id');
-      document.getElementById('excluir_name').textContent = button.getAttribute('data-name');
+      document.getElementById('excluir_user_name').textContent = button.getAttribute('data-name');
     });
   }
 

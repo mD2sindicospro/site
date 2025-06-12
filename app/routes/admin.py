@@ -9,7 +9,7 @@ admin = Blueprint('admin', __name__, url_prefix='/admin')
 @admin.route('/')
 @login_required
 def admin_dashboard():
-    if not current_user.is_admin():
+    if not current_user.is_admin:
         flash('Acesso negado', 'danger')
         return redirect(url_for('main.home'))
     return render_template('admin/dashboard.html')
@@ -17,7 +17,7 @@ def admin_dashboard():
 @admin.route('/users')
 @login_required
 def manage_users():
-    if not current_user.is_admin():
+    if not current_user.is_admin:
         flash('Acesso negado', 'danger')
         return redirect(url_for('main.home'))
     users = User.query.all()
@@ -26,7 +26,7 @@ def manage_users():
 @admin.route('/user/create', methods=['GET', 'POST'])
 @login_required
 def create_user():
-    if not current_user.is_admin():
+    if not current_user.is_admin:
         flash('Acesso negado', 'danger')
         return redirect(url_for('main.home'))
     

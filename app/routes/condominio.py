@@ -54,9 +54,9 @@ def create():
 @condominio.route('/')
 @login_required
 def list():
-    if current_user.is_admin():
+    if current_user.is_admin:
         condominios = Condominio.query.all()
-    elif current_user.is_supervisor():
+    elif current_user.is_supervisor:
         condominios = Condominio.query.filter_by(supervisor_id=current_user.id).all()
     else:
         flash('Você não tem permissão para acessar esta página.', 'danger')

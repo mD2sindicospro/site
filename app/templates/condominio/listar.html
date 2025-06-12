@@ -4,14 +4,14 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    {% if current_user.is_admin() %}
+    {% if current_user.is_admin %}
         <h1>Gerenciar Condomínios</h1>
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novoCondominioModal">
             <i class="fas fa-plus"></i> Novo Condomínio
         </button>
     {% endif %}
 </div>
-{% if current_user.is_supervisor() %}
+{% if current_user.is_supervisor %}
 <div class="row mb-2">
     <div class="col-12">
         <div class="card shadow mb-2" style="background: #37495c; border-radius: 16px; border: none;">
@@ -27,11 +27,10 @@
     <table class="table table-striped text-center align-middle">
         <thead>
             <tr>
+                <th>ID</th>
                 <th>Nome</th>
                 <th>Endereço</th>
-                <th>Aptos</th>
                 <th>Supervisor</th>
-                <th>Data de Entrada</th>
                 <th>Status</th>
                 <th>Ações</th>
             </tr>
@@ -39,11 +38,10 @@
         <tbody>
             {% for condominio in condominios %}
             <tr>
+                <td>{{ condominio.id }}</td>
                 <td>{{ condominio.nome }}</td>
                 <td>{{ condominio.endereco }}</td>
-                <td>{{ condominio.numero_apartamentos }}</td>
-                <td>{{ condominio.supervisor.username }}</td>
-                <td>{% if condominio.data_entrada %}{{ condominio.data_entrada.strftime('%d/%m/%Y') }}{% else %}-{% endif %}</td>
+                <td>{{ condominio.supervisor.name if condominio.supervisor else 'Sem supervisor' }}</td>
                 <td>
                     {% if condominio.is_active %}
                         <span class="badge bg-success">Ativo</span>
@@ -53,45 +51,29 @@
                 </td>
                 <td>
                     <div class="d-flex justify-content-center gap-2">
-                        {% if current_user.is_admin() or current_user.id == condominio.supervisor_id or current_user.is_supervisor() %}
+                        {% if current_user.is_admin or current_user.is_supervisor %}
                         <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarCondominioModal"
                             data-condominio-id="{{ condominio.id }}"
                             data-nome="{{ condominio.nome }}"
                             data-endereco="{{ condominio.endereco }}"
-                            data-numero-apartamentos="{{ condominio.numero_apartamentos }}"
                             data-supervisor-id="{{ condominio.supervisor_id }}"
-                            data-supervisor="{{ condominio.supervisor.username if condominio.supervisor else '' }}"
-                            data-data-entrada="{% if condominio.data_entrada %}{{ condominio.data_entrada.strftime('%d/%m/%Y') }}{% endif %}"
-                            data-administrador="{{ condominio.administrador or '' }}"
-                            data-contato="{{ condominio.contato or '' }}"
-                            data-email="{{ condominio.email or '' }}"
+                            data-is-active="{{ 1 if condominio.is_active else 0 }}"
                             data-bs-toggle="tooltip" data-bs-placement="top" title="Editar">
                             <i class="fas fa-edit"></i>
                         </button>
                         {% endif %}
-                        {% if current_user.is_admin() or current_user.is_supervisor() %}
-                        <button class="btn btn-sm {% if condominio.is_active %}btn-danger{% else %}btn-success{% endif %}" data-bs-toggle="modal" data-bs-target="#confirmAtivarInativarModal"
-                            data-condominio-id="{{ condominio.id }}"
-                            data-condominio-nome="{{ condominio.nome }}"
-                            data-condominio-ativo="{{ 1 if condominio.is_active else 0 }}"
-                            data-bs-toggle="tooltip" data-bs-placement="top" title="{% if condominio.is_active %}Inativar{% else %}Ativar{% endif %}">
-                            <i class="fas {% if condominio.is_active %}fa-toggle-on{% else %}fa-toggle-off{% endif %}"></i>
+                        <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#confirmInativarModal"
+                            data-condominio-id="{{ condominio.id }}" data-nome="{{ condominio.nome }}"
+                            data-bs-toggle="tooltip" data-bs-placement="top" title="Inativar" {% if not condominio.is_active %}disabled{% endif %}>
+                            <i class="fas fa-user-slash"></i>
+                        </button>
+                        {% if current_user.is_admin and condominio.id != current_user.id %}
+                        <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#confirmExcluirModal"
+                            data-condominio-id="{{ condominio.id }}" data-nome="{{ condominio.nome }}"
+                            data-bs-toggle="tooltip" data-bs-placement="top" title="Excluir">
+                            <i class="fas fa-trash"></i>
                         </button>
                         {% endif %}
-                        <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#visualizarCondominioModal"
-                            data-condominio-id="{{ condominio.id }}"
-                            data-nome="{{ condominio.nome }}"
-                            data-endereco="{{ condominio.endereco }}"
-                            data-numero-apartamentos="{{ condominio.numero_apartamentos }}"
-                            data-supervisor="{{ condominio.supervisor.username if condominio.supervisor else '' }}"
-                            data-data-entrada="{% if condominio.data_entrada %}{{ condominio.data_entrada.strftime('%d/%m/%Y') }}{% endif %}"
-                            data-administrador="{{ condominio.administrador or '' }}"
-                            data-contato="{{ condominio.contato or '' }}"
-                            data-email="{{ condominio.email or '' }}"
-                            data-status="{% if condominio.is_active %}Ativo{% else %}Inativo{% endif %}"
-                            data-bs-toggle="tooltip" data-bs-placement="top" title="Visualizar">
-                            <i class="fas fa-eye"></i>
-                        </button>
                     </div>
                 </td>
             </tr>
@@ -102,204 +84,149 @@
 
 <!-- Modal Novo Condomínio -->
 <div class="modal fade" id="novoCondominioModal" tabindex="-1" aria-labelledby="novoCondominioModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="novoCondominioModalLabel">Novo Condomínio</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-      </div>
-      <div class="modal-body">
-        <form method="POST" action="{{ url_for('condominio.novo_condominio') }}">
-            <div class="row g-3">
-                <div class="col-12 col-md-6">
-                    <label for="nome" class="form-label fw-semibold"><i class="fas fa-building me-1"></i> Nome <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control form-control-lg" id="nome" name="nome" placeholder="Digite o nome" required>
-                </div>
-                <div class="col-12 col-md-6">
-                    <label for="data_entrada" class="form-label fw-semibold"><i class="fas fa-calendar-alt me-1"></i> Data de Entrada <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control form-control-lg" id="data_entrada" name="data_entrada" placeholder="dd/mm/aaaa" maxlength="10" autocomplete="off" required>
-                </div>
-                <div class="col-12">
-                    <label for="endereco" class="form-label fw-semibold"><i class="fas fa-map-marker-alt me-1"></i> Endereço</label>
-                    <input type="text" class="form-control form-control-lg" id="endereco" name="endereco" placeholder="Digite o endereço" required>
-                </div>
-                <div class="col-12 col-md-6">
-                    <label for="novo_supervisor_id" class="form-label fw-semibold"><i class="fas fa-user-tie me-1"></i> Supervisor</label>
-                    <select class="form-select form-control-lg" id="novo_supervisor_id" name="novo_supervisor_id">
-                        <option value="">(Sem supervisor)</option>
-                        {% for user in supervisores %}
-                        <option value="{{ user.id }}">{{ user.username }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-12 col-md-6">
-                    <label for="numero_apartamentos" class="form-label fw-semibold"><i class="fas fa-door-open me-1"></i> Aptos</label>
-                    <input type="number" class="form-control form-control-lg" id="numero_apartamentos" name="numero_apartamentos" placeholder="Ex: 20" min="1" required>
-                </div>
-                <div class="col-12 col-md-6">
-                    <label for="administrador" class="form-label fw-semibold"><i class="fas fa-user-shield me-1"></i> Administrador</label>
-                    <input type="text" class="form-control form-control-lg" id="administrador" name="administrador" placeholder="Nome do administrador">
-                </div>
-                <div class="col-12 col-md-6">
-                    <label for="contato" class="form-label fw-semibold"><i class="fas fa-phone me-1"></i> Contato (Telefone)</label>
-                    <input type="text" class="form-control form-control-lg" id="contato" name="contato" placeholder="(99) 99999-9999" maxlength="15">
-                </div>
-                <div class="col-12 col-md-6">
-                    <label for="email" class="form-label fw-semibold"><i class="fas fa-envelope me-1"></i> Email</label>
-                    <input type="email" class="form-control form-control-lg" id="email" name="email" placeholder="email@exemplo.com">
-                </div>
-                <div class="col-12 col-md-6 d-flex align-items-end gap-2 justify-content-end">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times me-1"></i> Cancelar</button>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-check me-1"></i> Cadastrar</button>
-                </div>
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="novoCondominioModalLabel">Novo Condomínio</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-        </form>
-      </div>
+            <div class="modal-body">
+                <form method="POST" action="{{ url_for('condominio.manage_condominios') }}">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label for="nome" class="form-label fw-semibold"><i class="fas fa-building me-1"></i> Nome</label>
+                            <input type="text" class="form-control form-control-lg" id="nome" name="nome" placeholder="Digite o nome" required>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="endereco" class="form-label fw-semibold"><i class="fas fa-map-marker-alt me-1"></i> Endereço</label>
+                            <input type="text" class="form-control form-control-lg" id="endereco" name="endereco" placeholder="Digite o endereço" required>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="supervisor_id" class="form-label fw-semibold"><i class="fas fa-user-tie me-1"></i> Supervisor</label>
+                            {% if current_user.is_admin %}
+                            <select class="form-select form-control-lg" id="supervisor_id" name="supervisor_id">
+                                <option value="">(Sem supervisor)</option>
+                                {% for user in supervisores %}
+                                <option value="{{ user.id }}">{{ user.name }}</option>
+                                {% endfor %}
+                            </select>
+                            {% else %}
+                            <input type="text" class="form-control form-control-lg bg-light" id="supervisor_nome" name="supervisor_nome" readonly>
+                            <input type="hidden" id="supervisor_id" name="supervisor_id">
+                            {% endif %}
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="is_active" class="form-label fw-semibold"><i class="fas fa-toggle-on me-1"></i> Status</label>
+                            <select class="form-select form-control-lg" id="is_active" name="is_active" required>
+                                <option value="1">Ativo</option>
+                                <option value="0">Inativo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 
 <!-- Modal Editar Condomínio -->
 <div class="modal fade" id="editarCondominioModal" tabindex="-1" aria-labelledby="editarCondominioModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="editarCondominioModalLabel">Editar Condomínio</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-      </div>
-      <div class="modal-body">
-        <form method="POST" action="{{ url_for('condominio.listar_condominios') }}">
-            <input type="hidden" id="edit_condominio_id" name="edit_condominio_id">
-            <div class="row g-3">
-                <div class="col-12 col-md-6">
-                    <label for="edit_nome" class="form-label fw-semibold"><i class="fas fa-building me-1"></i> Nome <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control form-control-lg" id="edit_nome" name="edit_nome" required>
-                </div>
-                <div class="col-12 col-md-6">
-                    <label for="edit_data_entrada" class="form-label fw-semibold"><i class="fas fa-calendar-alt me-1"></i> Data de Entrada <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control form-control-lg" id="edit_data_entrada" name="edit_data_entrada" placeholder="dd/mm/aaaa" maxlength="10" autocomplete="off" required>
-                </div>
-                <div class="col-12">
-                    <label for="edit_endereco" class="form-label fw-semibold"><i class="fas fa-map-marker-alt me-1"></i> Endereço</label>
-                    <input type="text" class="form-control form-control-lg" id="edit_endereco" name="edit_endereco">
-                </div>
-                <div class="col-12 col-md-6">
-                    <label for="edit_supervisor_id" class="form-label fw-semibold"><i class="fas fa-user-tie me-1"></i> Supervisor</label>
-                    {% if current_user.is_admin() %}
-                    <select class="form-select form-control-lg" id="edit_supervisor_id" name="edit_supervisor_id">
-                        <option value="">(Sem supervisor)</option>
-                        {% for user in supervisores %}
-                        <option value="{{ user.id }}">{{ user.username }}</option>
-                        {% endfor %}
-                    </select>
-                    {% else %}
-                    <input type="text" class="form-control form-control-lg bg-light" id="edit_supervisor_nome" name="edit_supervisor_nome" readonly>
-                    <input type="hidden" id="edit_supervisor_id" name="edit_supervisor_id">
-                    {% endif %}
-                </div>
-                <div class="col-12 col-md-6">
-                    <label for="edit_numero_apartamentos" class="form-label fw-semibold"><i class="fas fa-door-open me-1"></i> Aptos</label>
-                    <input type="number" class="form-control form-control-lg" id="edit_numero_apartamentos" name="edit_numero_apartamentos" min="1">
-                </div>
-                <div class="col-12 col-md-6">
-                    <label for="edit_administrador" class="form-label fw-semibold"><i class="fas fa-user-shield me-1"></i> Administrador</label>
-                    <input type="text" class="form-control form-control-lg" id="edit_administrador" name="edit_administrador" placeholder="Nome do administrador">
-                </div>
-                <div class="col-12 col-md-6">
-                    <label for="edit_contato" class="form-label fw-semibold"><i class="fas fa-phone me-1"></i> Contato (Telefone)</label>
-                    <input type="text" class="form-control form-control-lg" id="edit_contato" name="edit_contato" placeholder="(99) 99999-9999" maxlength="15">
-                </div>
-                <div class="col-12 col-md-6">
-                    <label for="edit_email" class="form-label fw-semibold"><i class="fas fa-envelope me-1"></i> Email</label>
-                    <input type="email" class="form-control form-control-lg" id="edit_email" name="edit_email" placeholder="email@exemplo.com">
-                </div>
-                <div class="col-12 col-md-6 d-flex align-items-end gap-2 justify-content-end">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times me-1"></i> Cancelar</button>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-check me-1"></i> Salvar</button>
-                </div>
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editarCondominioModalLabel">Editar Condomínio</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Modal Visualizar Condomínio -->
-<div class="modal fade" id="visualizarCondominioModal" tabindex="-1" aria-labelledby="visualizarCondominioModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="visualizarCondominioModalLabel">Detalhes do Condomínio</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-      </div>
-      <div class="modal-body">
-        <div class="row g-3">
-            <div class="col-12 col-md-6">
-                <div class="mb-2"><i class="fas fa-building me-1 text-secondary"></i> <strong>Nome:</strong></div>
-                <div id="view_nome"></div>
-            </div>
-            <div class="col-12 col-md-6">
-                <div class="mb-2"><i class="fas fa-map-marker-alt me-1 text-secondary"></i> <strong>Endereço:</strong></div>
-                <div id="view_endereco"></div>
-            </div>
-            <div class="col-12 col-md-6">
-                <div class="mb-2"><i class="fas fa-door-open me-1 text-secondary"></i> <strong>Número de Apartamentos:</strong></div>
-                <div id="view_numero_apartamentos"></div>
-            </div>
-            <div class="col-12 col-md-6">
-                <div class="mb-2"><i class="fas fa-user-tie me-1 text-secondary"></i> <strong>Supervisor:</strong></div>
-                <div id="view_supervisor"></div>
-            </div>
-            <div class="col-12 col-md-6">
-                <div class="mb-2"><i class="fas fa-calendar-alt me-1 text-secondary"></i> <strong>Data de Entrada:</strong></div>
-                <div id="view_data_entrada"></div>
-            </div>
-            <div class="col-12 col-md-6">
-                <div class="mb-2"><i class="fas fa-user-shield me-1 text-secondary"></i> <strong>Administrador:</strong></div>
-                <div id="view_administrador"></div>
-            </div>
-            <div class="col-12 col-md-6">
-                <div class="mb-2"><i class="fas fa-phone me-1 text-secondary"></i> <strong>Contato:</strong></div>
-                <div id="view_contato"></div>
-            </div>
-            <div class="col-12 col-md-6">
-                <div class="mb-2"><i class="fas fa-envelope me-1 text-secondary"></i> <strong>Email:</strong></div>
-                <div id="view_email"></div>
-            </div>
-            <div class="col-12 col-md-6">
-                <div class="mb-2"><i class="fas fa-toggle-on me-1 text-secondary"></i> <strong>Status:</strong></div>
-                <div id="view_status"></div>
+            <div class="modal-body">
+                <form method="POST" action="{{ url_for('condominio.manage_condominios') }}">
+                    <input type="hidden" id="edit_condominio_id" name="edit_condominio_id">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label for="edit_nome" class="form-label fw-semibold"><i class="fas fa-building me-1"></i> Nome</label>
+                            <input type="text" class="form-control form-control-lg" id="edit_nome" name="nome" placeholder="Digite o nome" required>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="edit_endereco" class="form-label fw-semibold"><i class="fas fa-map-marker-alt me-1"></i> Endereço</label>
+                            <input type="text" class="form-control form-control-lg" id="edit_endereco" name="endereco" placeholder="Digite o endereço" required>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="edit_supervisor_id" class="form-label fw-semibold"><i class="fas fa-user-tie me-1"></i> Supervisor</label>
+                            {% if current_user.is_admin %}
+                            <select class="form-select form-control-lg" id="edit_supervisor_id" name="edit_supervisor_id">
+                                <option value="">(Sem supervisor)</option>
+                                {% for user in supervisores %}
+                                <option value="{{ user.id }}">{{ user.name }}</option>
+                                {% endfor %}
+                            </select>
+                            {% else %}
+                            <input type="text" class="form-control form-control-lg bg-light" id="edit_supervisor_nome" name="edit_supervisor_nome" readonly>
+                            <input type="hidden" id="edit_supervisor_id" name="edit_supervisor_id">
+                            {% endif %}
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="edit_is_active" class="form-label fw-semibold"><i class="fas fa-toggle-on me-1"></i> Status</label>
+                            <select class="form-select form-control-lg" id="edit_is_active" name="edit_is_active" required>
+                                <option value="1">Ativo</option>
+                                <option value="0">Inativo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                </form>
             </div>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-      </div>
     </div>
-  </div>
 </div>
 
-<!-- Modal Confirmar Ativar/Inativar -->
-<div class="modal fade" id="confirmAtivarInativarModal" tabindex="-1" aria-labelledby="confirmAtivarInativarModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="confirmAtivarInativarModalLabel">Confirmar Alteração de Status</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-      </div>
-      <div class="modal-body">
-        <p>Tem certeza que deseja <span id="acao_status"></span> o condomínio <strong id="nome_condominio_status"></strong>?</p>
-        <form method="POST" action="{{ url_for('condominio.listar_condominios') }}">
-            <input type="hidden" id="ativar_inativar_condominio_id" name="ativar_inativar_condominio_id">
-            <input type="hidden" id="novo_status_condominio" name="novo_status_condominio">
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-primary" id="confirmarStatusBtn">Confirmar</button>
-      </div>
+<!-- Modal Confirmar Inativação -->
+<div class="modal fade" id="confirmInativarModal" tabindex="-1" aria-labelledby="confirmInativarModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmInativarModalLabel">Confirmar Inativação</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja inativar o condomínio <strong id="inativar_condominio_nome"></strong>?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="POST" action="{{ url_for('condominio.manage_condominios') }}">
+                    <input type="hidden" id="inativar_condominio_id" name="inativar_condominio_id">
+                    <button type="submit" class="btn btn-warning">Inativar</button>
+                </form>
+            </div>
+        </div>
     </div>
-  </div>
+</div>
+
+<!-- Modal Confirmar Exclusão -->
+<div class="modal fade" id="confirmExcluirModal" tabindex="-1" aria-labelledby="confirmExcluirModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmExcluirModalLabel">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir o condomínio <strong id="excluir_condominio_nome"></strong>?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="POST" action="{{ url_for('condominio.manage_condominios') }}">
+                    <input type="hidden" id="excluir_condominio_id" name="excluir_condominio_id">
+                    <button type="submit" class="btn btn-danger">Excluir</button>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 
 {% endblock %}
@@ -331,71 +258,40 @@ document.addEventListener('DOMContentLoaded', function() {
             var condominioId = button.getAttribute('data-condominio-id');
             var nome = button.getAttribute('data-nome');
             var endereco = button.getAttribute('data-endereco');
-            var numeroApartamentos = button.getAttribute('data-numero-apartamentos');
             var supervisorId = button.getAttribute('data-supervisor-id');
-            var supervisor = button.getAttribute('data-supervisor');
-            var dataEntrada = button.getAttribute('data-data-entrada');
-            var administrador = button.getAttribute('data-administrador');
-            var contato = button.getAttribute('data-contato');
-            var email = button.getAttribute('data-email');
+            var isActive = button.getAttribute('data-is-active');
 
             document.getElementById('edit_condominio_id').value = condominioId;
             document.getElementById('edit_nome').value = nome;
             document.getElementById('edit_endereco').value = endereco;
-            document.getElementById('edit_numero_apartamentos').value = numeroApartamentos;
             document.getElementById('edit_supervisor_id').value = supervisorId;
-            document.getElementById('edit_supervisor_nome').value = supervisor;
-            document.getElementById('edit_data_entrada').value = formatarData(dataEntrada);
-            document.getElementById('edit_administrador').value = administrador;
-            document.getElementById('edit_contato').value = contato;
-            document.getElementById('edit_email').value = email;
+            document.getElementById('edit_is_active').value = isActive;
         });
     }
 
-    // Configurar modal de visualização
-    var visualizarModal = document.getElementById('visualizarCondominioModal');
-    if (visualizarModal) {
-        visualizarModal.addEventListener('show.bs.modal', function (event) {
-            var button = event.relatedTarget;
-            var nome = button.getAttribute('data-nome');
-            var endereco = button.getAttribute('data-endereco');
-            var numeroApartamentos = button.getAttribute('data-numero-apartamentos');
-            var supervisor = button.getAttribute('data-supervisor');
-            var dataEntrada = button.getAttribute('data-data-entrada');
-            var administrador = button.getAttribute('data-administrador');
-            var contato = button.getAttribute('data-contato');
-            var email = button.getAttribute('data-email');
-            var status = button.getAttribute('data-status');
-
-            document.getElementById('view_nome').textContent = nome;
-            document.getElementById('view_endereco').textContent = endereco;
-            document.getElementById('view_numero_apartamentos').textContent = numeroApartamentos;
-            document.getElementById('view_supervisor').textContent = supervisor;
-            document.getElementById('view_data_entrada').textContent = formatarData(dataEntrada);
-            document.getElementById('view_administrador').textContent = administrador || '-';
-            document.getElementById('view_contato').textContent = contato || '-';
-            document.getElementById('view_email').textContent = email || '-';
-            document.getElementById('view_status').textContent = status;
-        });
-    }
-
-    // Configurar modal de ativar/inativar
-    var confirmModal = document.getElementById('confirmAtivarInativarModal');
-    if (confirmModal) {
-        confirmModal.addEventListener('show.bs.modal', function (event) {
+    // Configurar modal de inativação
+    var confirmInativarModal = document.getElementById('confirmInativarModal');
+    if (confirmInativarModal) {
+        confirmInativarModal.addEventListener('show.bs.modal', function (event) {
             var button = event.relatedTarget;
             var condominioId = button.getAttribute('data-condominio-id');
-            var condominioNome = button.getAttribute('data-condominio-nome');
-            var condominioAtivo = button.getAttribute('data-condominio-ativo');
+            var condominioNome = button.getAttribute('data-nome');
 
-            document.getElementById('ativar_inativar_condominio_id').value = condominioId;
-            document.getElementById('novo_status_condominio').value = condominioAtivo === '1' ? '0' : '1';
-            document.getElementById('nome_condominio_status').textContent = condominioNome;
-            document.getElementById('acao_status').textContent = condominioAtivo === '1' ? 'inativar' : 'ativar';
+            document.getElementById('inativar_condominio_id').value = condominioId;
+            document.getElementById('inativar_condominio_nome').textContent = condominioNome;
         });
+    }
 
-        document.getElementById('confirmarStatusBtn').addEventListener('click', function() {
-            document.querySelector('#confirmAtivarInativarModal form').submit();
+    // Configurar modal de exclusão
+    var confirmExcluirModal = document.getElementById('confirmExcluirModal');
+    if (confirmExcluirModal) {
+        confirmExcluirModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var condominioId = button.getAttribute('data-condominio-id');
+            var condominioNome = button.getAttribute('data-nome');
+
+            document.getElementById('excluir_condominio_id').value = condominioId;
+            document.getElementById('excluir_condominio_nome').textContent = condominioNome;
         });
     }
 
