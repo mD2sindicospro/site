@@ -40,11 +40,10 @@ def client(app):
 def test_user(app):
     with app.app_context():
         user = User(
-            username='testuser',
             email='user@example.com',
             password='password123',
             name='Test User',
-            role='normal'
+            role='user'
         )
         db.session.add(user)
         db.session.commit()

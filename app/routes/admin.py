@@ -31,7 +31,7 @@ def create_user():
         return redirect(url_for('main.home'))
     
     if request.method == 'POST':
-        username = request.form.get('username')
+        name = request.form.get('name')
         email = request.form.get('email')
         password = request.form.get('password')
         role = request.form.get('role')
@@ -41,7 +41,7 @@ def create_user():
             flash('Email já cadastrado', 'danger')
             return redirect(url_for('admin.create_user'))
         
-        user = User(username=username, email=email, role=role)
+        user = User(name=name, email=email, role=role)
         user.set_password(password)
         user.is_active = is_active
         
@@ -68,13 +68,13 @@ def manage_users_old():
         if not current_user.is_admin:
             flash('Apenas administradores podem criar usuários.', 'danger')
             return redirect(url_for('admin.manage_users'))
-        username = flask.request.form.get('username')
+        name = flask.request.form.get('name')
         email = flask.request.form.get('email')
         password = flask.request.form.get('password')
         role = flask.request.form.get('role')
         is_active = flask.request.form.get('is_active') == '1'
         password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
-        user = User(username=username, email=email, password=password, role=role)
+        user = User(name=name, email=email, password=password, role=role)
         user.password_hash = password_hash
         user.is_active = is_active
         db.session.add(user)
@@ -90,9 +90,9 @@ def manage_users_old():
         user_id = flask.request.form.get('edit_user_id')
         user = User.query.get(user_id)
         if user:
-            user.username = flask.request.form.get('edit_username')
-            user.email = flask.request.form.get('edit_email')
-            user.role = flask.request.form.get('edit_role')
+            user.name = flask.request.form.get('name')
+            user.email = flask.request.form.get('email')
+            user.role = flask.request.form.get('role')
             user.is_active = flask.request.form.get('edit_is_active') == '1'
             new_password = flask.request.form.get('edit_password')
             if new_password:

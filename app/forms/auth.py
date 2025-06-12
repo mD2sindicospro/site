@@ -25,21 +25,21 @@ class LoginForm(FlaskForm):
             raise ValidationError('Senha incorreta')
 
 class RegistrationForm(FlaskForm):
-    username = StringField('Nome de Usuário', validators=[DataRequired(), Length(min=2, max=20)])
+    name = StringField('Nome', validators=[DataRequired(), Length(min=2, max=100)])
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Senha', validators=[DataRequired()])
     confirm_password = PasswordField('Confirmar Senha', validators=[DataRequired(), EqualTo('password')])
     role = SelectField('Tipo de Usuário', choices=[
-        ('normal', 'Normal'),
+        ('user', 'Normal'),
         ('supervisor', 'Supervisor'),
         ('admin', 'Administrador')
     ])
     submit = SubmitField('Registrar')
 
-    def validate_username(self, username):
-        user = User.query.filter_by(username=username.data).first()
+    def validate_name(self, name):
+        user = User.query.filter_by(name=name.data).first()
         if user:
-            raise ValidationError('Este nome de usuário já está em uso. Por favor, escolha outro.')
+            raise ValidationError('Este nome já está em uso. Por favor, escolha outro.')
 
     def validate_email(self, email):
         user = User.query.filter_by(email=email.data).first()

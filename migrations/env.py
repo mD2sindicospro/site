@@ -1,6 +1,5 @@
 import logging
 from logging.config import fileConfig
-import os
 
 from flask import current_app
 
@@ -12,10 +11,7 @@ config = context.config
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
-ini_path = config.config_file_name
-if not os.path.isfile(ini_path):
-    ini_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'alembic.ini')
-fileConfig(ini_path)
+fileConfig(config.config_file_name)
 logger = logging.getLogger('alembic.env')
 
 

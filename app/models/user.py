@@ -13,7 +13,6 @@ class User(UserMixin, db.Model):
     __tablename__ = 'users'
     
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(128))
     name = db.Column(db.String(100))
@@ -34,19 +33,17 @@ class User(UserMixin, db.Model):
     # Lista de papéis válidos
     VALID_ROLES = ['user', 'supervisor', 'admin']
 
-    def __init__(self, username, email, password=None, role='user', is_active=True, name=None):
-        if not username or not email:
-            raise ValueError("Username e email são obrigatórios")
-        
+    def __init__(self, email, password=None, role='user', is_active=True, name=None):
+        if not email:
+            raise ValueError("Email é obrigatório")
+        if not name:
+            raise ValueError("Nome é obrigatório")
         if role not in self.VALID_ROLES:
             raise ValueError(f"Papel inválido. Papéis válidos são: {', '.join(self.VALID_ROLES)}")
-            
-        self.username = username
         self.email = email
         self.role = role
         self.is_active = is_active
         self.name = name
-        
         if password:
             self.set_password(password)
 
@@ -98,4 +95,4 @@ class User(UserMixin, db.Model):
         self.__dict__['role'] = value
 
     def __repr__(self):
-        return f'<User {self.username}>' 
+        return f'<User {self.name}>' 

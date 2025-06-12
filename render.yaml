@@ -5,7 +5,7 @@ services:
     buildCommand: |
       pip install -r requirements.txt
       flask db upgrade
-    startCommand: gunicorn "wsgi:app" --bind 0.0.0.0:$PORT --workers 4 --timeout 120
+    startCommand: gunicorn "wsgi:app" --bind 0.0.0.0:$PORT --workers 4 --timeout 120 --max-requests 1000 --max-requests-jitter 50
     envVars:
       - key: FLASK_APP
         value: wsgi.py
@@ -21,8 +21,23 @@ services:
           property: connectionString
       - key: LOG_TO_STDOUT
         value: "true"
+      - key: PYTHONUNBUFFERED
+        value: "true"
     healthCheckPath: /
     autoDeploy: true
+    buildFilter:
+      paths:
+        - "**/*"
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-XSS-Protection
+        value: 1; mode=block
 
 databases:
   - name: site-m2d-db

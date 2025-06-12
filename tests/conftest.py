@@ -47,10 +47,10 @@ def admin_user(app):
 def normal_user(app):
     with app.app_context():
         user = User(
-            username='user',
+            name='user',
             email='user@example.com',
             password='user123',
-            role='normal',
+            role='user',
             is_active=True
         )
         db.session.add(user)
@@ -93,10 +93,10 @@ def test_user(app):
     """Cria um usuário de teste."""
     with app.app_context():
         user = User(
-            username='testuser',
+            name='testuser',
             email='test@example.com',
             password='password123',
-            role='normal',
+            role='user',
             is_active=True
         )
         db.session.add(user)

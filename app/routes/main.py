@@ -71,10 +71,9 @@ def home():
     # Criar formulário para nova atividade
     form = NovaAtividadeForm()
     form.condominio.choices = [(c.id, c.nome) for c in Condominio.query.filter_by(is_active=True).all()]
-    form.responsavel.choices = [(u.id, u.username) for u in User.query.filter_by(is_active=True).all()]
+    form.responsavel.choices = [(u.id, u.name) for u in User.query.filter_by(is_active=True).all()]
 
-    # Adiciona mensagem de boas-vindas
-    flash(f'Bem-vindo, {current_user.username}!', 'success')
+    # Removido o flash de boas-vindas para evitar duplicidade
     return render_template('main/home.html',
                          atividades=atividades,
                          total_paginas=total_paginas,
@@ -84,15 +83,15 @@ def home():
 @main.route('/home', methods=['GET', 'POST'])
 @login_required
 def home_post():
-    current_app.logger.info(f'Usuário {current_user.username} acessou a página inicial')
+    current_app.logger.info(f'Usuário {current_user.name} acessou a página inicial')
     form = NovaAtividadeForm()
     condominios = Condominio.query.filter_by(is_active=True).all()
     form.condominio.choices = [(c.id, c.nome) for c in condominios]
     users = User.query.filter_by(is_active=True).all()
-    form.responsavel.choices = [(u.id, u.username) for u in users]
+    form.responsavel.choices = [(u.id, u.name) for u in users]
 
     if request.method == 'POST':
-        current_app.logger.info(f'Usuário {current_user.username} tentou criar uma nova atividade')
+        current_app.logger.info(f'Usuário {current_user.name} tentou criar uma nova atividade')
         # Converte data_entrega se vier como dd/mm/aaaa
         data_entrega_str = request.form.get('data_entrega')
         data_entrega = None
@@ -128,12 +127,12 @@ def home_post():
                     usuario_destino_id=form.responsavel.data,
                     usuario_remetente_id=current_user.id,
                     assunto='Nova atividade atribuída',
-                    corpo=f'{current_user.username} criou uma nova atividade para você: {form.atividade.data}',
+                    corpo=f'{current_user.name} criou uma nova atividade para você: {form.atividade.data}',
                     lida=False
                 )
                 db.session.add(msg)
                 db.session.commit()
-                current_app.logger.info(f'Atividade criada com sucesso por {current_user.username}')
+                current_app.logger.info(f'Atividade criada com sucesso por {current_user.name}')
                 flash('Atividade criada com sucesso!', 'success')
             except Exception as e:
                 current_app.logger.error(f'Erro ao criar atividade: {str(e)}')
@@ -209,7 +208,7 @@ def home_post():
     # Cálculo dos percentuais para usuário normal ou supervisor
     percentual_pendentes = percentual_andamento = percentual_concluidas = percentual_atrasadas = percentual_nao_realizadas = 0
     total_condominios_supervisor = 0
-    if current_user.role == 'normal':
+    if current_user.role == 'user':
         condominios_ativos = Condominio.query.filter_by(is_active=True).all()
         ids_ativos = [c.id for c in condominios_ativos]
         atividades_user = Atividade.query.filter(Atividade.responsavel_id == current_user.id, Atividade.condominio_id.in_(ids_ativos)).all()
@@ -309,7 +308,7 @@ def minhas_atividades():
     condominios = Condominio.query.filter_by(is_active=True).all()
     form.condominio.choices = [(c.id, c.nome) for c in condominios]
     users = User.query.filter_by(is_active=True).all()
-    form.responsavel.choices = [(u.id, u.username) for u in users]
+    form.responsavel.choices = [(u.id, u.name) for u in users]
 
     # Filtros
     filtro_condominio = request.args.get('condominio', type=int)
@@ -382,7 +381,7 @@ def aceitar_atividade(atividade_id):
 def concluir_atividade(atividade_id):
     atividade = Atividade.query.get_or_404(atividade_id)
     if atividade.responsavel_id != current_user.id:
-        current_app.logger.warning(f'Usuário {current_user.username} tentou concluir atividade de outro usuário')
+        current_app.logger.warning(f'Usuário {current_user.name} tentou concluir atividade de outro usuário')
         abort(403)
     
     try:
@@ -390,7 +389,7 @@ def concluir_atividade(atividade_id):
         atividade.resolvida = True
         atividade.data_conclusao = datetime.now()
         db.session.commit()
-        current_app.logger.info(f'Atividade {atividade_id} concluída por {current_user.username}')
+        current_app.logger.info(f'Atividade {atividade_id} concluída por {current_user.name}')
         flash('Atividade concluída com sucesso!', 'success')
     except Exception as e:
         current_app.logger.error(f'Erro ao concluir atividade {atividade_id}: {str(e)}')
@@ -419,7 +418,7 @@ def desistir_atividade(atividade_id):
             usuario_destino_id=atividade.criado_por_id,
             usuario_remetente_id=current_user.id,
             assunto='Atividade cancelada',
-            corpo=f'{current_user.username} cancelou uma atividade que você criou: {atividade.atividade}',
+            corpo=f'{current_user.name} cancelou uma atividade que você criou: {atividade.atividade}',
             lida=False
         )
         db.session.add(msg)
@@ -472,7 +471,7 @@ def aprovar_atividade(atividade_id):
             usuario_destino_id=atividade.responsavel_id,
             usuario_remetente_id=current_user.id,
             assunto='Atividade aprovada',
-            corpo=f'{current_user.username} aprovou sua atividade: {atividade.atividade}',
+            corpo=f'{current_user.name} aprovou sua atividade: {atividade.atividade}',
             lida=False
         )
         db.session.add(msg)
@@ -513,7 +512,7 @@ def arquivo():
     condominios = Condominio.query.filter_by(is_active=True).all()
     form.condominio.choices = [(c.id, c.nome) for c in condominios]
     users = User.query.filter_by(is_active=True).all()
-    form.responsavel.choices = [(u.id, u.username) for u in users]
+    form.responsavel.choices = [(u.id, u.name) for u in users]
 
     pagina = request.args.get('pagina', 1, type=int)
     por_pagina = 20
@@ -635,7 +634,7 @@ def solicitar_correcao_atividade(atividade_id):
             usuario_destino_id=atividade.responsavel_id,
             usuario_remetente_id=current_user.id,
             assunto='Correção solicitada na atividade',
-            corpo=f'{current_user.username} solicitou correção na sua atividade: {atividade.atividade}. Motivo: {motivo}',
+            corpo=f'{current_user.name} solicitou correção na sua atividade: {atividade.atividade}. Motivo: {motivo}',
             lida=False
         )
         db.session.add(msg)
@@ -772,7 +771,7 @@ def relatorios():
     condominios = Condominio.query.filter_by(is_active=True).all()
     form.condominio.choices = [(c.id, c.nome) for c in condominios]
     users = User.query.filter_by(is_active=True).all()
-    form.responsavel.choices = [(u.id, u.username) for u in users]
+    form.responsavel.choices = [(u.id, u.name) for u in users]
 
     # Totais globais para admin
     total_condominios = Condominio.query.count() if current_user.is_admin() else None
@@ -837,7 +836,7 @@ def relatorios():
 
     if current_user.is_admin():
         # Responsáveis comuns
-        responsaveis = User.query.filter_by(is_active=True, role='normal').all()
+        responsaveis = User.query.filter_by(is_active=True, role='user').all()
         responsaveis_dict = {u.id: {
             'usuario': u,
                 'pendentes': 0,

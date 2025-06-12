@@ -36,9 +36,8 @@ def test_logout(client, normal_user):
 def normal_user():
     """Fixture para criar um usuário normal."""
     user = User(
-        username='testuser',
+        name='testuser',
         email='user@example.com',
-        name='Test User',
         role='user'
     )
     user.set_password('password123')

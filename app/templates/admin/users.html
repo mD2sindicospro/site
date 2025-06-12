@@ -17,7 +17,7 @@
         <thead>
             <tr>
                 <th>ID</th>
-                <th>Nome de Usuário</th>
+                <th>Nome</th>
                 <th>Email</th>
                 <th>Conta</th>
                 <th>Status</th>
@@ -28,7 +28,7 @@
             {% for user in users %}
             <tr>
                 <td>{{ user.id }}</td>
-                <td>{{ user.username }}</td>
+                <td>{{ user.name }}</td>
                 <td>{{ user.email }}</td>
                 <td>{{ user.role.upper() }}</td>
                 <td>
@@ -43,7 +43,7 @@
                         {% if current_user.is_admin() or current_user.is_supervisor() %}
                         <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarUsuarioModal"
                             data-user-id="{{ user.id }}"
-                            data-username="{{ user.username }}"
+                            data-name="{{ user.name }}"
                             data-email="{{ user.email }}"
                             data-role="{{ user.role }}"
                             data-is-active="{{ 1 if user.is_active else 0 }}"
@@ -52,13 +52,13 @@
                         </button>
                         {% endif %}
                         <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#confirmInativarModal"
-                            data-user-id="{{ user.id }}" data-username="{{ user.username }}"
+                            data-user-id="{{ user.id }}" data-name="{{ user.name }}"
                             data-bs-toggle="tooltip" data-bs-placement="top" title="Inativar" {% if not user.is_active %}disabled{% endif %}>
                             <i class="fas fa-user-slash"></i>
                         </button>
                         {% if current_user.is_admin() and user.id != current_user.id %}
                         <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#confirmExcluirModal"
-                            data-user-id="{{ user.id }}" data-username="{{ user.username }}"
+                            data-user-id="{{ user.id }}" data-name="{{ user.name }}"
                             data-bs-toggle="tooltip" data-bs-placement="top" title="Excluir">
                             <i class="fas fa-trash-alt"></i>
                         </button>
@@ -83,8 +83,8 @@
         <form method="POST" action="{{ url_for('admin.manage_users') }}">
             <div class="row g-3">
                 <div class="col-12 col-md-6">
-                    <label for="username" class="form-label fw-semibold"><i class="fas fa-user me-1"></i> Nome do Usuário</label>
-                    <input type="text" class="form-control form-control-lg" id="username" name="username" placeholder="Digite o nome" required>
+                    <label for="name" class="form-label fw-semibold"><i class="fas fa-user me-1"></i> Nome</label>
+                    <input type="text" class="form-control form-control-lg" id="name" name="name" placeholder="Digite o nome" required>
                 </div>
                 <div class="col-12 col-md-6">
                     <label for="email" class="form-label fw-semibold"><i class="fas fa-envelope me-1"></i> Email</label>
@@ -133,8 +133,8 @@
             <input type="hidden" id="edit_user_id" name="edit_user_id">
             <div class="row g-3">
                 <div class="col-12 col-md-6">
-                    <label for="edit_username" class="form-label fw-semibold"><i class="fas fa-user me-1"></i> Nome do Usuário</label>
-                    <input type="text" class="form-control form-control-lg" id="edit_username" name="edit_username" required>
+                    <label for="edit_name" class="form-label fw-semibold"><i class="fas fa-user me-1"></i> Nome</label>
+                    <input type="text" class="form-control form-control-lg" id="edit_name" name="edit_name" required>
                 </div>
                 <div class="col-12 col-md-6">
                     <label for="edit_email" class="form-label fw-semibold"><i class="fas fa-envelope me-1"></i> Email</label>
@@ -183,7 +183,7 @@
       <div class="modal-body">
         <form method="POST" action="{{ url_for('admin.manage_users') }}">
           <input type="hidden" id="inativar_user_id" name="inativar_user_id">
-          <p>Tem certeza que deseja inativar o usuário <strong id="inativar_username"></strong>?</p>
+          <p>Tem certeza que deseja inativar o usuário <strong id="inativar_name"></strong>?</p>
           <div class="d-flex justify-content-end gap-2 mt-4">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
             <button type="submit" class="btn btn-warning">Inativar</button>
@@ -205,7 +205,7 @@
       <div class="modal-body">
         <form method="POST" action="{{ url_for('admin.manage_users') }}">
           <input type="hidden" id="excluir_user_id" name="excluir_user_id">
-          <p>Tem certeza que deseja <strong class="text-danger">excluir</strong> o usuário <strong id="excluir_username"></strong>? Esta ação não pode ser desfeita.</p>
+          <p>Tem certeza que deseja <strong class="text-danger">excluir</strong> o usuário <strong id="excluir_name"></strong>? Esta ação não pode ser desfeita.</p>
           <div class="d-flex justify-content-end gap-2 mt-4">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
             <button type="submit" class="btn btn-danger">Excluir</button>
@@ -223,7 +223,7 @@ document.addEventListener('DOMContentLoaded', function() {
     editarUsuarioModal.addEventListener('show.bs.modal', function (event) {
       var button = event.relatedTarget;
       document.getElementById('edit_user_id').value = button.getAttribute('data-user-id');
-      document.getElementById('edit_username').value = button.getAttribute('data-username');
+      document.getElementById('edit_name').value = button.getAttribute('data-name');
       document.getElementById('edit_email').value = button.getAttribute('data-email');
       document.getElementById('edit_role').value = button.getAttribute('data-role');
       document.getElementById('edit_is_active').value = button.getAttribute('data-is-active');
@@ -236,7 +236,7 @@ document.addEventListener('DOMContentLoaded', function() {
     confirmInativarModal.addEventListener('show.bs.modal', function (event) {
       var button = event.relatedTarget;
       document.getElementById('inativar_user_id').value = button.getAttribute('data-user-id');
-      document.getElementById('inativar_username').textContent = button.getAttribute('data-username');
+      document.getElementById('inativar_name').textContent = button.getAttribute('data-name');
     });
   }
 
@@ -245,7 +245,7 @@ document.addEventListener('DOMContentLoaded', function() {
     confirmExcluirModal.addEventListener('show.bs.modal', function (event) {
       var button = event.relatedTarget;
       document.getElementById('excluir_user_id').value = button.getAttribute('data-user-id');
-      document.getElementById('excluir_username').textContent = button.getAttribute('data-username');
+      document.getElementById('excluir_name').textContent = button.getAttribute('data-name');
     });
   }
 

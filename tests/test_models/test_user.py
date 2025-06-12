@@ -17,19 +17,17 @@ def test_create_user(app):
     """Testa a criação de um usuário"""
     with app.app_context():
         user = User(
-            username='testuser',
+            name='testuser',
             email='test@example.com',
             password='password123',
-            name='Test User',
             role='user'
         )
         db.session.add(user)
         db.session.commit()
 
         assert user.id is not None
-        assert user.username == 'testuser'
+        assert user.name == 'testuser'
         assert user.email == 'test@example.com'
-        assert user.name == 'Test User'
         assert user.role == 'user'
         assert user.is_active is True
         assert isinstance(user.created_at, datetime)
@@ -39,7 +37,7 @@ def test_user_password_hashing(app):
     """Testa o hash de senha"""
     with app.app_context():
         user = User(
-            username='testuser',
+            name='testuser',
             email='test@example.com',
             password='password123'
         )
@@ -54,14 +52,14 @@ def test_user_validation(app):
         # Teste de email inválido
         with pytest.raises(ValueError):
             User(
-                username='testuser',
+                name='testuser',
                 email='invalid-email',
                 password='password123'
             )
 
         # Teste de username duplicado
         user1 = User(
-            username='testuser1',
+            name='testuser1',
             email='test1@example.com',
             password='password123'
         )
@@ -70,7 +68,7 @@ def test_user_validation(app):
 
         with pytest.raises(IntegrityError):
             user2 = User(
-                username='testuser1',
+                name='testuser1',
                 email='test2@example.com',
                 password='password123'
             )
@@ -81,7 +79,7 @@ def test_user_update(app):
     """Testa a atualização de usuário"""
     with app.app_context():
         user = User(
-            username='testuser',
+            name='testuser',
             email='test@example.com',
             password='password123'
         )
@@ -100,7 +98,7 @@ def test_user_deactivation(app):
     """Testa a desativação de usuário"""
     with app.app_context():
         user = User(
-            username='testuser',
+            name='testuser',
             email='test@example.com',
             password='password123'
         )

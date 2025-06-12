@@ -33,20 +33,20 @@ def create():
             return redirect(url_for('condominio.list'))
         
         try:
-        condominio = Condominio(
-            nome=nome,
-            endereco=endereco,
-            numero_apartamentos=numero_apartamentos,
+            condominio = Condominio(
+                nome=nome,
+                endereco=endereco,
+                numero_apartamentos=numero_apartamentos,
                 supervisor_id=supervisor_id
-        )
-        db.session.add(condominio)
-        db.session.commit()
+            )
+            db.session.add(condominio)
+            db.session.commit()
             flash('Condomínio criado com sucesso', 'success')
             return redirect(url_for('condominio.list'))
         except Exception as e:
             db.session.rollback()
             flash(f'Erro ao criar condomínio: {str(e)}', 'danger')
-        return redirect(url_for('condominio.list'))
+            return redirect(url_for('condominio.list'))
     
     supervisores = User.query.filter_by(role='supervisor', is_active=True).all()
     return render_template('condominio/create.html', supervisores=supervisores)

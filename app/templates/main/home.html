@@ -4,21 +4,11 @@
 
 {% block content %}
 <div class="container-fluid">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
     <div class="row mb-2">
         <div class="col-12">
             <div class="card shadow mb-3">
                 <div class="card-header py-3 rounded-top text-center">
-                    <h6 class="m-0 font-weight-bold text-white">Seus dados, {{ current_user.username }}</h6>
+                    <h6 class="m-0 font-weight-bold text-white">Seus dados, {{ current_user.name }}</h6>
                 </div>
             </div>
         </div>
@@ -93,7 +83,7 @@
                     </div>
                 </div>
             </div>
-        {% elif current_user.role == 'normal' %}
+        {% elif current_user.role == 'user' %}
             <div class="col-12 d-flex justify-content-center flex-wrap px-0" style="max-width: 100%;">
                 <div class="card shadow h-100 py-2 flex-fill mx-2" style="min-width: 220px; max-width: 100%;">
                     <div class="card-body py-3 px-2">
