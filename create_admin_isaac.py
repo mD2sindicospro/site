@@ -12,7 +12,7 @@ def create_admin():
 
         # Cria o usuário admin
         admin = User(
-            username='Isaac',
+            name='Isaac',
             email='isaac@md2.com',
             role='admin',
             is_active=True

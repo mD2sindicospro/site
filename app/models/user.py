@@ -86,13 +86,5 @@ class User(UserMixin, db.Model):
         db.session.add(self)
         db.session.commit()
 
-    @property
-    def role(self):
-        return self.__dict__.get('role', 'user')
-
-    @role.setter
-    def role(self, value):
-        self.__dict__['role'] = value
-
     def __repr__(self):
         return f'<User {self.name}>' 

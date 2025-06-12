@@ -8,65 +8,63 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def create_admin_user():
-    """Cria um usuário administrador"""
-    app = create_app('development')
+    app = create_app()
     with app.app_context():
-        try:
-            # Verifica se já existe um admin
-            admin = User.query.filter_by(role='admin').first()
-            if admin:
-                print("❌ Já existe um usuário administrador!")
-                return False
-
-            # Cria o usuário admin
-            admin = User(
-                username='admin',
-                email='admin@example.com',
-                password='admin123',
-                name='Administrador',
-                role='admin'
-            )
-            db.session.add(admin)
-            db.session.commit()
-            print("✅ Usuário administrador criado com sucesso!")
-            print(f"Username: admin")
-            print(f"Senha: admin123")
-            return True
-
-        except Exception as e:
-            print(f"❌ Erro ao criar usuário administrador: {e}")
-            return False
+        if User.query.filter_by(email='admin@admin.com').first():
+            print('Usuário já existe!')
+            return
+        admin = User(
+            name='Admin',
+            email='admin@admin.com',
+            role='admin',
+            is_active=True
+        )
+        admin.set_password('123456')
+        db.session.add(admin)
+        db.session.commit()
+        print('Usuário admin criado com sucesso!')
+        print('Email: admin@admin.com')
+        print('Senha: 123456')
 
 def create_diego_admin():
-    """Cria um usuário administrador Diego"""
-    app = create_app('development')
+    app = create_app()
     with app.app_context():
-        try:
-            # Verifica se já existe um admin Diego
-            admin = User.query.filter_by(username='diego').first()
-            if admin:
-                print("❌ Já existe um usuário Diego!")
-                return False
+        if User.query.filter_by(email='diego@md2.com').first():
+            print('Usuário Diego já existe!')
+            return
+        admin = User(
+            name='Diego',
+            email='diego@md2.com',
+            role='admin',
+            is_active=True
+        )
+        admin.set_password('diego123')
+        db.session.add(admin)
+        db.session.commit()
+        print('Usuário administrador Diego criado com sucesso!')
+        print('Email: diego@md2.com')
+        print('Senha: diego123')
 
-            # Cria o usuário admin Diego
-            admin = User(
-                username='diego',
-                email='diego@md2.com',
-                password='diego123',
-                name='Diego',
-                role='admin'
-            )
-            db.session.add(admin)
-            db.session.commit()
-            print("✅ Usuário administrador Diego criado com sucesso!")
-            print(f"Username: diego")
-            print(f"Senha: diego123")
-            return True
-
-        except Exception as e:
-            print(f"❌ Erro ao criar usuário Diego: {e}")
-            return False
+def create_isaac_admin():
+    app = create_app()
+    with app.app_context():
+        if User.query.filter_by(email='isaac@md2.com').first():
+            print('Usuário Isaac já existe!')
+            return
+        admin = User(
+            name='Isaac',
+            email='isaac@md2.com',
+            role='admin',
+            is_active=True
+        )
+        admin.set_password('123456')
+        db.session.add(admin)
+        db.session.commit()
+        print('Usuário administrador Isaac criado com sucesso!')
+        print('Email: isaac@md2.com')
+        print('Senha: 123456')
 
 if __name__ == '__main__':
     create_admin_user()
-    create_diego_admin() 
+    create_diego_admin()
+    create_isaac_admin() 
