@@ -39,7 +39,7 @@ def create_app(config_name='default'):
                 condominios = Condominio.query.filter_by(is_active=True).all()
                 form.condominio.choices = [(c.id, c.nome) for c in condominios]
                 users = User.query.filter_by(is_active=True).all()
-                form.responsavel.choices = [(u.id, u.username) for u in users]
+                form.responsavel.choices = [(u.id, u.name) for u in users]
             return {'nova_atividade_form': form}
         except Exception as e:
             app.logger.error(f"Erro ao injetar formulário de atividade: {str(e)}")
