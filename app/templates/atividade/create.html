@@ -37,7 +37,7 @@
         
         <div class="mb-3">
             <label for="data_entrega" class="form-label">Data de Entrega</label>
-            <input type="date" class="form-control" id="data_entrega" name="data_entrega" required>
+            <input type="text" class="form-control" id="data_entrega" name="data_entrega" required placeholder="dd/mm/aaaa">
         </div>
         
         <div class="mb-3">
@@ -53,4 +53,19 @@
         <a href="{{ url_for('atividade.list') }}" class="btn btn-secondary">Cancelar</a>
     </form>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    flatpickr("#data_entrega", {
+        dateFormat: "d/m/Y",
+        locale: "pt"
+    });
+});
+</script>
 {% endblock %} 

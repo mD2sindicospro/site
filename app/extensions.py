@@ -33,7 +33,7 @@ def init_extensions(app):
         from app.models.mensagem import Mensagem
         from app.models.condominio import Condominio
         from app.models.atividade import Atividade
-        from app.models.address import Address
+        # from app.models.address import Address
 
         # Garante que o app está registrado com o SQLAlchemy
         if app not in db._app_engines:

@@ -38,7 +38,7 @@ def serialize_atividade(a):
         'condominio': {'nome': a.condominio.nome if a.condominio else '—'},
         'data_lancamento': a.data_lancamento.strftime('%d/%m/%Y') if a.data_lancamento else '—',
         'atividade': a.atividade,
-        'responsavel': {'username': a.responsavel.username if a.responsavel else '—'},
+        'responsavel': {'username': a.responsavel.name if a.responsavel else '—'},
         'data_entrega': a.data_entrega.strftime('%d/%m/%Y') if a.data_entrega else '—',
         'status': a.status
     }
@@ -599,7 +599,7 @@ def arquivo():
 @login_required
 def atualizacoes():
     mensagens = (Mensagem.query
-        .filter_by(usuario_destino_id=current_user.id)
+        .filter_by(destinatario_id=current_user.id)
         .order_by(Mensagem.data_criacao.desc())
         .limit(30)
         .all())
@@ -749,7 +749,7 @@ def exportar_excel():
         data.append({
             'Condomínio': a.condominio.nome if a.condominio else '',
             'Lançamento': a.data_lancamento.strftime('%d/%m/%Y') if a.data_lancamento else '',
-            'Responsável': a.responsavel.username if a.responsavel else '',
+            'Responsável': a.responsavel.name if a.responsavel else '',
             'Atividade': a.atividade,
             'Entregar em': a.data_entrega.strftime('%d/%m/%Y') if a.data_entrega else '',
             'Concluída em': a.data_conclusao.strftime('%d/%m/%Y') if hasattr(a, 'data_conclusao') and a.data_conclusao else '',
@@ -765,7 +765,7 @@ def exportar_excel():
 @main.route('/relatorios')
 @login_required
 def relatorios():
-    if not (current_user.is_supervisor() or current_user.is_admin()):
+    if not (current_user.is_supervisor or current_user.is_admin):
         abort(403)
     form = NovaAtividadeForm()
     condominios = Condominio.query.filter_by(is_active=True).all()
@@ -774,11 +774,11 @@ def relatorios():
     form.responsavel.choices = [(u.id, u.name) for u in users]
 
     # Totais globais para admin
-    total_condominios = Condominio.query.count() if current_user.is_admin() else None
-    total_usuarios = User.query.filter_by(is_active=True).count() if current_user.is_admin() else None
+    total_condominios = Condominio.query.count() if current_user.is_admin else None
+    total_usuarios = User.query.filter_by(is_active=True).count() if current_user.is_admin else None
     total_pendentes = total_andamento = total_atrasadas = total_concluidas = total_nao_realizadas = 0
     percentual_pendentes = percentual_andamento = percentual_atrasadas = percentual_concluidas = percentual_nao_realizadas = 0
-    if current_user.is_admin():
+    if current_user.is_admin:
         condominios_ativos = Condominio.query.filter_by(is_active=True).all()
         ids_ativos = [c.id for c in condominios_ativos]
         total_condominios_supervisor = len(ids_ativos)
@@ -804,7 +804,7 @@ def relatorios():
     data_lancamento_fim = request.args.get('data_lancamento_fim')
 
     # Para admin, busca todas as atividades dos condomínios ativos
-    if current_user.is_admin():
+    if current_user.is_admin:
         condominios_ativos = Condominio.query.filter_by(is_active=True).all()
         ids_ativos = [c.id for c in condominios_ativos]
         atividades_query = Atividade.query.filter(Atividade.condominio_id.in_(ids_ativos))
@@ -834,7 +834,7 @@ def relatorios():
     # Busca as atividades filtradas
     atividades = atividades_query.all()
 
-    if current_user.is_admin():
+    if current_user.is_admin:
         # Responsáveis comuns
         responsaveis = User.query.filter_by(is_active=True, role='user').all()
         responsaveis_dict = {u.id: {
@@ -890,7 +890,7 @@ def relatorios():
         responsaveis_graficos = {}
         for uid, u in responsaveis_dict.items():
             responsaveis_graficos[uid] = {
-                'usuario': {'id': u['usuario'].id, 'username': u['usuario'].username},
+                'usuario': {'id': u['usuario'].id, 'username': u['usuario'].name},
                 'pendentes': u['pendentes'],
                 'em_andamento': u['em_andamento'],
                 'atrasadas': u['atrasadas'],
@@ -901,7 +901,7 @@ def relatorios():
         supervisores_graficos = {}
         for uid, u in supervisores_dict.items():
             supervisores_graficos[uid] = {
-                'usuario': {'id': u['usuario'].id, 'username': u['usuario'].username},
+                'usuario': {'id': u['usuario'].id, 'username': u['usuario'].name},
                 'pendentes': u['pendentes'],
                 'em_andamento': u['em_andamento'],
                 'atrasadas': u['atrasadas'],
@@ -955,7 +955,7 @@ def relatorios():
     usuarios_graficos = {}
     for uid, u in usuarios.items():
         usuarios_graficos[uid] = {
-            'usuario': {'id': u['usuario'].id, 'username': u['usuario'].username},
+            'usuario': {'id': u['usuario'].id, 'username': u['usuario'].name},
             'pendentes': u['pendentes'],
             'em_andamento': u['em_andamento'],
             'atrasadas': u['atrasadas'],

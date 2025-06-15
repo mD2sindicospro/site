@@ -18,6 +18,9 @@ def login():
         user = User.query.filter_by(email=email).first()
         
         if user and user.check_password(password):
+            if not user.is_active:
+                flash('Usuário inativo. Entre em contato com o administrador.', 'danger')
+                return render_template('auth/login.html', form=form)
             login_user(user)
             flash('Bem-vindo!', 'success')
             return redirect(url_for('main.home'))

@@ -35,7 +35,7 @@
                     </div>
                     <div class="mb-3">
                         {{ form.data_entrega.label(class="form-label") }}
-                        {{ form.data_entrega(class="form-control", type="date") }}
+                        {{ form.data_entrega(class="form-control", type="text", placeholder="dd/mm/aaaa") }}
                         {% for error in form.data_entrega.errors %}
                             <span class="text-danger small">{{ error }}</span>
                         {% endfor %}
@@ -49,4 +49,19 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    flatpickr("#data_entrega", {
+        dateFormat: "d/m/Y",
+        locale: "pt"
+    });
+});
+</script>
 {% endblock %} 

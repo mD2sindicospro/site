@@ -12,6 +12,10 @@ class Condominio(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    data_entrada = db.Column(db.Date)
+    administrador_nome = db.Column(db.String(100))
+    administrador_telefone = db.Column(db.String(30))
+    administrador_email = db.Column(db.String(120))
 
     # Relacionamentos
     supervisor = db.relationship('User', foreign_keys=[supervisor_id], back_populates='condominios_supervisionados')

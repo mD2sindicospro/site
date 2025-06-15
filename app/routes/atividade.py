@@ -13,9 +13,9 @@ atividade = Blueprint('atividade', __name__, url_prefix='/atividade')
 @login_required
 def list():
     """Lista todas as atividades do usuário."""
-    if current_user.is_admin():
+    if current_user.is_admin:
         atividades = Atividade.query.all()
-    elif current_user.is_supervisor():
+    elif current_user.is_supervisor:
         atividades = Atividade.query.filter(
             (Atividade.responsavel_id == current_user.id) |
             (Atividade.criado_por_id == current_user.id)
@@ -68,7 +68,7 @@ def create():
 def update(id):
     atividade = Atividade.query.get_or_404(id)
     
-    if not current_user.is_admin() and current_user.id != atividade.responsavel_id:
+    if not current_user.is_admin and current_user.id != atividade.responsavel_id:
         flash('Acesso não autorizado', 'danger')
         return redirect(url_for('main.home'))
         
@@ -97,7 +97,7 @@ def update(id):
 def delete(id):
     atividade = Atividade.query.get_or_404(id)
     
-    if not current_user.is_admin() and current_user.id != atividade.responsavel_id:
+    if not current_user.is_admin and current_user.id != atividade.responsavel_id:
         flash('Acesso não autorizado', 'danger')
         return redirect(url_for('main.home'))
         
@@ -116,7 +116,7 @@ def delete(id):
 def concluir(id):
     atividade = Atividade.query.get_or_404(id)
     
-    if not current_user.is_admin() and current_user.id != atividade.responsavel_id:
+    if not current_user.is_admin and current_user.id != atividade.responsavel_id:
         flash('Acesso não autorizado', 'danger')
         return redirect(url_for('main.home'))
         

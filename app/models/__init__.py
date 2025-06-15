@@ -5,7 +5,7 @@ from datetime import datetime
 from app.models.user import User
 from app.models.condominio import Condominio
 from app.models.atividade import Atividade
-from app.models.address import Address
+# from app.models.address import Address
 
 # Garante que todas as tabelas sejam criadas
 __all__ = [

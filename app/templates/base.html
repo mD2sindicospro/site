@@ -303,7 +303,7 @@
                                 <i class="fas fa-home"></i> Início
                             </a>
                         </li>
-                        {% if current_user.role in ['admin', 'supervisor'] %}
+                        {% if current_user.role == 'supervisor' or current_user.role == 'user' %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{{ url_for('condominio.list') }}">
                                     <i class="fas fa-building"></i> Condomínios
@@ -322,15 +322,22 @@
                                 </a>
                             </li>
                         {% endif %}
-                        {% if current_user.role in ['admin', 'supervisor'] %}
+                        {% if current_user.is_authenticated %}
                             <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('main.relatorios') }}">
-                                    <i class="fas fa-chart-bar"></i> Relatórios
+                                <a class="nav-link" href="{{ url_for('main.atualizacoes') }}">
+                                    <i class="fas fa-bell"></i> Atualizações
                                 </a>
                             </li>
                         {% endif %}
                     </ul>
                     <ul class="navbar-nav">
+                        {% if current_user.is_authenticated and (current_user.is_admin or current_user.is_supervisor) %}
+                        <li class="nav-item d-flex align-items-center me-2">
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createAtividadeModal">
+                                <i class="fas fa-plus"></i> Nova Atividade
+                            </button>
+                        </li>
+                        {% endif %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
                                 <i class="fas fa-user"></i> {{ current_user.name }}

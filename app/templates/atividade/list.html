@@ -104,7 +104,7 @@
                     </div>
                     <div class="mb-3">
                         <label for="data_entrega" class="form-label">Data de Entrega</label>
-                        <input type="date" class="form-control" id="data_entrega" name="data_entrega">
+                        <input type="text" class="form-control" id="data_entrega" name="data_entrega" placeholder="dd/mm/aaaa">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -138,4 +138,19 @@
     </div>
 </div>
 {% endfor %}
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    flatpickr("#data_entrega", {
+        dateFormat: "d/m/Y",
+        locale: "pt"
+    });
+});
+</script>
 {% endblock %} 

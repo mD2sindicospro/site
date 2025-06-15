@@ -56,13 +56,6 @@
                             data-bs-toggle="tooltip" data-bs-placement="top" title="Inativar" {% if not user.is_active %}disabled{% endif %}>
                             <i class="fas fa-user-slash"></i>
                         </button>
-                        {% if current_user.is_admin and user.id != current_user.id %}
-                        <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#confirmExcluirModal"
-                            data-user-id="{{ user.id }}" data-name="{{ user.name }}"
-                            data-bs-toggle="tooltip" data-bs-placement="top" title="Excluir">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                        {% endif %}
                     </div>
                 </td>
             </tr>
@@ -87,10 +80,6 @@
                             <input type="text" class="form-control form-control-lg" id="name" name="name" placeholder="Digite o nome" required>
                         </div>
                         <div class="col-12 col-md-6">
-                            <label for="email" class="form-label fw-semibold"><i class="fas fa-envelope me-1"></i> Email</label>
-                            <input type="email" class="form-control form-control-lg" id="email" name="email" placeholder="Digite o email" required>
-                        </div>
-                        <div class="col-12 col-md-6">
                             <label for="role" class="form-label fw-semibold"><i class="fas fa-user-tag me-1"></i> Conta</label>
                             <select class="form-select form-control-lg" id="role" name="role" required>
                                 <option value="user">Normal</option>
@@ -99,16 +88,24 @@
                             </select>
                         </div>
                         <div class="col-12 col-md-6">
+                            <label for="email" class="form-label fw-semibold"><i class="fas fa-envelope me-1"></i> Email</label>
+                            <input type="email" class="form-control form-control-lg" id="email" name="email" placeholder="Digite o email" required>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="password" class="form-label fw-semibold"><i class="fas fa-key me-1"></i> Senha</label>
+                            <input type="password" class="form-control form-control-lg" id="password" name="password" placeholder="Digite a senha" required>
+                        </div>
+                        <div class="col-12 col-md-6">
                             <label for="is_active" class="form-label fw-semibold"><i class="fas fa-toggle-on me-1"></i> Status</label>
                             <select class="form-select form-control-lg" id="is_active" name="is_active" required>
                                 <option value="1">Ativo</option>
                                 <option value="0">Inativo</option>
                             </select>
                         </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <div class="col-12 col-md-6 d-flex align-items-end justify-content-end gap-2">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Salvar</button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -184,28 +181,6 @@
     </div>
 </div>
 
-<!-- Modal Confirmar Exclusão -->
-<div class="modal fade" id="confirmExcluirModal" tabindex="-1" aria-labelledby="confirmExcluirModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="confirmExcluirModalLabel">Confirmar Exclusão</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p>Tem certeza que deseja excluir o usuário <strong id="excluir_user_name"></strong>?</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <form method="POST" action="{{ url_for('admin.manage_users') }}">
-                    <input type="hidden" id="excluir_user_id" name="excluir_user_id">
-                    <button type="submit" class="btn btn-danger">Excluir</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   var editarUsuarioModal = document.getElementById('editarUsuarioModal');
@@ -226,15 +201,6 @@ document.addEventListener('DOMContentLoaded', function() {
       var button = event.relatedTarget;
       document.getElementById('inativar_user_id').value = button.getAttribute('data-user-id');
       document.getElementById('inativar_user_name').textContent = button.getAttribute('data-name');
-    });
-  }
-
-  var confirmExcluirModal = document.getElementById('confirmExcluirModal');
-  if (confirmExcluirModal) {
-    confirmExcluirModal.addEventListener('show.bs.modal', function (event) {
-      var button = event.relatedTarget;
-      document.getElementById('excluir_user_id').value = button.getAttribute('data-user-id');
-      document.getElementById('excluir_user_name').textContent = button.getAttribute('data-name');
     });
   }
 

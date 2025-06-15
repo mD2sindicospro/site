@@ -5,7 +5,6 @@ from app.models.user import User
 from app.models.mensagem import Mensagem
 from app.models.condominio import Condominio
 from app.models.atividade import Atividade
-from app.models.address import Address
 from flask import current_app
 import os
 

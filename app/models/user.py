@@ -23,7 +23,7 @@ class User(UserMixin, db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relacionamentos
-    addresses = db.relationship('Address', back_populates='user', cascade='all, delete-orphan', lazy='joined')
+    # addresses = db.relationship('Address', back_populates='user', cascade='all, delete-orphan', lazy='joined')
     condominios_supervisionados = db.relationship('Condominio', back_populates='supervisor', lazy=True)
     atividades_responsavel = db.relationship('Atividade', foreign_keys='Atividade.responsavel_id', back_populates='responsavel', lazy=True)
     atividades_criadas = db.relationship('Atividade', foreign_keys='Atividade.criado_por_id', back_populates='criado_por', lazy=True)
