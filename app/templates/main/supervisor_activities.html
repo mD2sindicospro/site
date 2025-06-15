@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% from "utils/translations.html" import translate_status, get_status_class %}
+
+{% block title %}Atividades dos Meus Condomínios{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h6 class="m-0 font-weight-bold text-white" style="text-transform: uppercase;">ATIVIDADES - MINHAS PROPRIEDADES</h6>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Lista de Atividades</h6>
+        </div>
+        <div class="card-body">
+    <div class="table-responsive">
+                <table class="table table-bordered text-center align-middle table-activities" width="100%" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>Condomínio</th>
+                            <th>Título</th>
+                    <th>Responsável</th>
+                            <th>Data de Entrega</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if activities %}
+                    {% for activity in activities %}
+                    <tr>
+                                    <td>{{ activity.property.name if activity.property else '—' }}</td>
+                                    <td>{{ activity.title }}</td>
+                                    <td>{{ activity.responsible.username if activity.responsible else '—' }}</td>
+                        <td>{% if activity.delivery_date %}{{ activity.delivery_date.strftime('%d/%m/%y') }}{% else %}—{% endif %}</td>
+                                    <td><span class="{{ get_status_class(activity.status) }}">{{ translate_status(activity.status) }}</span></td>
+                                    <td>
+                                        <button type="button" class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#modalView{{ activity.id }}" title="Visualizar"><i class="fas fa-eye"></i></button>
+                                        <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalApprove{{ activity.id }}" title="Aprovar"><i class="fas fa-check"></i></button>
+                                        <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#modalCorrection{{ activity.id }}" title="Solicitar Correção"><i class="fas fa-exclamation-circle"></i></button>
+                                        <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#modalReject{{ activity.id }}" title="Rejeitar"><i class="fas fa-times"></i></button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                            <tr><td colspan="6" class="text-center">Nenhuma atividade encontrada</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.badge-status-pending { background: #f1c40f !important; color: #fff; }
+.badge-status-in-progress { background: #3498db !important; color: #fff; }
+.badge-status-completed { background: #2ecc71 !important; color: #fff; }
+.badge-status-cancelled { background: #e74c3c !important; color: #fff; }
+.badge-status-correction { background: #f39c12 !important; color: #fff; }
+.table-activities td, .table-activities th { font-size: 0.95rem; }
+</style>
+{% endblock %} 

@@ -57,8 +57,8 @@ MAIL_USE_TLS=true
 MAIL_USERNAME=seu-email@gmail.com
 MAIL_PASSWORD=sua-senha-de-app
 """)
-        print("✅ Arquivo .env criado com sucesso!")
-        print("⚠️ Por favor, edite o arquivo .env e configure sua URL do Neon!")
+        print("✅ .env file created successfully!")
+        print("⚠️ Please edit the .env file and configure your Neon URL!")
     
     # Instala dependências
     print("📦 Instalando dependências...")
@@ -66,7 +66,7 @@ MAIL_PASSWORD=sua-senha-de-app
     
     # Verifica se a URL do Neon está configurada
     if not os.getenv('DATABASE_URL'):
-        print("⚠️ DATABASE_URL não configurada! Configure sua URL do Neon no arquivo .env")
+        print("⚠️ DATABASE_URL not set! Configure your Neon URL in the .env file")
         return
     
     # Inicializa o banco de dados

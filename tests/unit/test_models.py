@@ -1,8 +1,8 @@
 import pytest
 from app.extensions import db
 from app.models.user import User
-from app.models.condominio import Condominio
-from app.models.atividade import Atividade
+from app.models.property import Property
+from app.models.activity import Activity
 from datetime import datetime
 
 def test_create_user(app):
@@ -36,96 +36,120 @@ def test_create_user_invalid_data(app):
     with pytest.raises(ValueError):
         User(username='testuser', email='test@test.com', password='test123', role='invalid_role')
 
-def test_create_condominio(app):
-    """Testa a criação de um condomínio."""
-    supervisor = User(
-        username='supervisor',
-        email='supervisor@test.com',
-        password='test123',
-        role='supervisor'
-    )
-    db.session.add(supervisor)
-    db.session.commit()
+def test_create_property(app):
+    with app.app_context():
+        supervisor = User(
+            username='supervisor',
+            email='supervisor@test.com',
+            role='supervisor'
+        )
+        db.session.add(supervisor)
+        db.session.commit()
 
-    condominio = Condominio(
-        nome='Test Condomínio',
-        endereco='Test Address',
-        numero_apartamentos=10,
-        supervisor_id=supervisor.id
-    )
-    db.session.add(condominio)
-    db.session.commit()
+        property = Property(
+            name='Test Property',
+            address='Test Address',
+            numero_apartamentos=10,
+            supervisor_id=supervisor.id
+        )
+        db.session.add(property)
+        db.session.commit()
 
-    assert condominio.id is not None
-    assert condominio.nome == 'Test Condomínio'
-    assert condominio.endereco == 'Test Address'
-    assert condominio.numero_apartamentos == 10
-    assert condominio.supervisor_id == supervisor.id
-    assert isinstance(condominio.created_at, datetime)
-    assert isinstance(condominio.updated_at, datetime)
+        assert property.id is not None
+        assert property.name == 'Test Property'
+        assert property.address == 'Test Address'
+        assert property.numero_apartamentos == 10
+        assert property.supervisor_id == supervisor.id
+        assert isinstance(property.created_at, datetime)
+        assert isinstance(property.updated_at, datetime)
 
-def test_create_condominio_invalid_data(app):
-    """Testa a criação de um condomínio com dados inválidos."""
-    with pytest.raises(ValueError):
-        Condominio(nome='', endereco='Test Address', numero_apartamentos=10)
-    
-    with pytest.raises(ValueError):
-        Condominio(nome='Test Condomínio', endereco='', numero_apartamentos=10)
-    
-    with pytest.raises(ValueError):
-        Condominio(nome='Test Condomínio', endereco='Test Address', numero_apartamentos=-1)
+def test_create_property_invalid_data(app):
+    with app.app_context():
+        with pytest.raises(ValueError):
+            Property(name='', address='Test Address', numero_apartamentos=10)
+        
+        with pytest.raises(ValueError):
+            Property(name='Test Property', address='', numero_apartamentos=10)
+        
+        with pytest.raises(ValueError):
+            Property(name='Test Property', address='Test Address', numero_apartamentos=-1)
 
-def test_create_atividade(app):
+def test_create_activity(app):
     """Testa a criação de uma atividade."""
-    supervisor = User(
-        username='supervisor',
-        email='supervisor@test.com',
-        password='test123',
-        role='supervisor'
-    )
-    db.session.add(supervisor)
-    db.session.commit()
+    with app.app_context():
+        # Criar usuário supervisor
+        supervisor = User(
+            username='test_supervisor',
+            email='supervisor@test.com',
+            role='supervisor'
+        )
+        db.session.add(supervisor)
+        db.session.commit()
 
-    condominio = Condominio(
-        nome='Test Condomínio',
-        endereco='Test Address',
-        numero_apartamentos=10,
-        supervisor_id=supervisor.id
-    )
-    db.session.add(condominio)
-    db.session.commit()
+        # Criar propriedade
+        property = Property(
+            name='Test Property',
+            address='Test Address'
+        )
+        db.session.add(property)
+        db.session.commit()
 
-    atividade = Atividade(
-        titulo='Test Atividade',
-        descricao='Test Description',
-        condominio_id=condominio.id,
-        responsavel_id=supervisor.id,
-        data_entrega='2024-12-31',
-        status='pendente'
-    )
-    db.session.add(atividade)
-    db.session.commit()
+        # Criar atividade
+        activity = Activity(
+            title='Test Activity',
+            description='Test Description',
+            property_id=property.id,
+            responsible_id=supervisor.id,
+            delivery_date='2024-12-31',
+            status='pending'
+        )
+        db.session.add(activity)
+        db.session.commit()
 
-    assert atividade.id is not None
-    assert atividade.titulo == 'Test Atividade'
-    assert atividade.descricao == 'Test Description'
-    assert atividade.condominio_id == condominio.id
-    assert atividade.responsavel_id == supervisor.id
-    assert atividade.data_entrega == '2024-12-31'
-    assert atividade.status == 'pendente'
-    assert isinstance(atividade.created_at, datetime)
-    assert isinstance(atividade.updated_at, datetime)
+        # Verificar se a atividade foi criada corretamente
+        assert activity.id is not None
+        assert activity.title == 'Test Activity'
+        assert activity.description == 'Test Description'
+        assert activity.property_id == property.id
+        assert activity.responsible_id == supervisor.id
+        assert activity.delivery_date == '2024-12-31'
+        assert activity.status == 'pending'
+        assert isinstance(activity.created_at, datetime)
+        assert isinstance(activity.updated_at, datetime)
 
-def test_create_atividade_invalid_data(app):
+def test_create_activity_invalid_data(app):
     """Testa a criação de uma atividade com dados inválidos."""
-    with pytest.raises(ValueError):
-        Atividade(titulo='', descricao='Test Description', status='pendente')
-    
-    with pytest.raises(ValueError):
-        Atividade(titulo='Test Atividade', descricao='', status='pendente')
-    
-    with pytest.raises(ValueError):
-        Atividade(titulo='Test Atividade', descricao='Test Description', status='invalid_status')
+    with app.app_context():
+        with pytest.raises(ValueError):
+            Activity(title='', description='Test Description', status='pending')
+        
+        with pytest.raises(ValueError):
+            Activity(title='Test Activity', description='', status='pending')
+        
+        with pytest.raises(ValueError):
+            Activity(title='Test Activity', description='Test Description', status='invalid_status')
+
+def test_activity_status_update(app):
+    """Testa a atualização de status da atividade."""
+    with app.app_context():
+        activity = Activity(
+            title='Test Activity',
+            description='Test Description',
+            status='pending'
+        )
+        activity.status = 'in_progress'
+        assert activity.status == 'in_progress'
+
+def test_activity_invalid_status(app):
+    """Testa a tentativa de atualização com status inválido."""
+    with app.app_context():
+        activity = Activity(
+            title='Test Activity',
+            description='Test Description',
+            status='pending'
+        )
+        with pytest.raises(ValueError):
+            activity.status = 'invalid_status'
 
 def test_user_password_hashing(app):
     """Testa o hash de senha do usuário."""
@@ -150,48 +174,27 @@ def test_user_password_update(app):
     assert user.check_password('newpass')
     assert not user.check_password('test123')
 
-def test_condominio_supervisor_relationship(app):
-    """Testa o relacionamento entre condomínio e supervisor."""
-    supervisor = User(
-        username='supervisor',
-        email='supervisor@test.com',
-        password='test123',
-        role='supervisor'
-    )
-    db.session.add(supervisor)
-    db.session.commit()
+def test_property_supervisor_relationship(app):
+    with app.app_context():
+        supervisor = User(
+            username='supervisor',
+            email='supervisor@test.com',
+            role='supervisor'
+        )
+        db.session.add(supervisor)
+        db.session.commit()
 
-    condominio = Condominio(
-        nome='Test Condomínio',
-        endereco='Test Address',
-        numero_apartamentos=10,
-        supervisor_id=supervisor.id
-    )
-    db.session.add(condominio)
-    db.session.commit()
+        property = Property(
+            name='Test Property',
+            address='Test Address',
+            numero_apartamentos=10,
+            supervisor_id=supervisor.id
+        )
+        db.session.add(property)
+        db.session.commit()
 
-    assert condominio.supervisor == supervisor
-    assert supervisor.condominios[0] == condominio
-
-def test_atividade_status_update(app):
-    """Testa a atualização de status da atividade."""
-    atividade = Atividade(
-        titulo='Test Atividade',
-        descricao='Test Description',
-        status='pendente'
-    )
-    atividade.status = 'em_andamento'
-    assert atividade.status == 'em_andamento'
-
-def test_atividade_invalid_status(app):
-    """Testa a tentativa de atualização com status inválido."""
-    atividade = Atividade(
-        titulo='Test Atividade',
-        descricao='Test Description',
-        status='pendente'
-    )
-    with pytest.raises(ValueError):
-        atividade.status = 'invalid_status'
+        assert property.supervisor == supervisor
+        assert supervisor.properties[0] == property
 
 def test_user_deactivation(app):
     """Testa a desativação de usuário."""

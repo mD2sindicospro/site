@@ -1,0 +1,19 @@
+{% macro translate_status(status) %}
+    {% if status == 'pending' %}
+        Pendente
+    {% elif status == 'in_progress' %}
+        Em Andamento
+    {% elif status == 'completed' %}
+        Concluída
+    {% elif status == 'cancelled' %}
+        Cancelada
+    {% elif status == 'correction' %}
+        Correção
+    {% else %}
+        {{ status }}
+    {% endif %}
+{% endmacro %}
+
+{% macro get_status_class(status) %}
+    badge-status-{{ status.replace(' ', '-').lower() }}
+{% endmacro %} 

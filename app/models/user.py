@@ -10,7 +10,7 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 class User(UserMixin, db.Model):
-    __tablename__ = 'users'
+    __tablename__ = 'user'
     
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
@@ -24,11 +24,11 @@ class User(UserMixin, db.Model):
     
     # Relacionamentos
     # addresses = db.relationship('Address', back_populates='user', cascade='all, delete-orphan', lazy='joined')
-    condominios_supervisionados = db.relationship('Condominio', back_populates='supervisor', lazy=True)
-    atividades_responsavel = db.relationship('Atividade', foreign_keys='Atividade.responsavel_id', back_populates='responsavel', lazy=True)
-    atividades_criadas = db.relationship('Atividade', foreign_keys='Atividade.criado_por_id', back_populates='criado_por', lazy=True)
-    mensagens_enviadas = db.relationship('Mensagem', foreign_keys='Mensagem.remetente_id', back_populates='remetente', lazy=True)
-    mensagens_recebidas = db.relationship('Mensagem', foreign_keys='Mensagem.destinatario_id', back_populates='destinatario', lazy=True)
+    properties_supervisionados = db.relationship('Property', back_populates='supervisor')
+    activities_responsible = db.relationship('Activity', foreign_keys='Activity.responsible_id', back_populates='responsible')
+    activities_created = db.relationship('Activity', foreign_keys='Activity.created_by_id', back_populates='created_by')
+    messages_sent = db.relationship('Message', foreign_keys='Message.sender_id', back_populates='sender')
+    messages_received = db.relationship('Message', foreign_keys='Message.receiver_id', back_populates='receiver')
 
     # Lista de papéis válidos
     VALID_ROLES = ['user', 'supervisor', 'admin']

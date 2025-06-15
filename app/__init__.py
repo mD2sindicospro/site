@@ -1,6 +1,6 @@
 from flask import Flask, current_app
 from flask import has_request_context
-from app.forms.atividade import NovaAtividadeForm
+from app.forms.activity import NewActivityForm
 from config import config
 from app.extensions import init_extensions
 
@@ -18,31 +18,29 @@ def create_app(config_name='default'):
     from app.routes.auth import auth
     from app.routes.main import main
     from app.routes.admin import admin
-    from app.routes.condominio import condominio
-    from app.routes.atividade import atividade
+    from app.routes.activity import activity
     
     app.register_blueprint(auth, url_prefix='/auth')
     app.register_blueprint(main)
     app.register_blueprint(admin, url_prefix='/admin')
-    app.register_blueprint(condominio, url_prefix='/condominio')
-    app.register_blueprint(atividade, url_prefix='/atividade')
+    app.register_blueprint(activity, url_prefix='/activity')
 
     @app.context_processor
-    def inject_nova_atividade_form():
+    def inject_new_activity_form():
         if not has_request_context():
-            return {'nova_atividade_form': NovaAtividadeForm()}
+            return {'new_activity_form': NewActivityForm()}
         try:
-            from app.models.condominio import Condominio
+            from app.models.property import Property
             from app.models.user import User
-            form = NovaAtividadeForm()
+            form = NewActivityForm()
             if current_app and current_app.app_context():
-                condominios = Condominio.query.filter_by(is_active=True).all()
-                form.condominio.choices = [(c.id, c.nome) for c in condominios]
+                properties = Property.query.filter_by(is_active=True).all()
+                form.property.choices = [(p.id, p.name) for p in properties]
                 users = User.query.filter_by(is_active=True).all()
-                form.responsavel.choices = [(u.id, u.name) for u in users]
-            return {'nova_atividade_form': form}
+                form.responsible.choices = [(u.id, u.name) for u in users]
+            return {'new_activity_form': form}
         except Exception as e:
             app.logger.error(f"Erro ao injetar formulário de atividade: {str(e)}")
-            return {'nova_atividade_form': NovaAtividadeForm()}
+            return {'new_activity_form': NewActivityForm()}
 
     return app 

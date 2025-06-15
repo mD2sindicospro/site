@@ -1,8 +1,8 @@
 import pytest
 from flask import url_for
 from app.models.user import User
-from app.models.condominio import Condominio
-from app.models.atividade import Atividade
+from app.models.property import Property
+from app.models.activity import Activity
 
 def test_home_page(client):
     """Testa o acesso à página inicial."""
@@ -45,87 +45,71 @@ def test_logout(client, test_user):
     assert response.status_code == 200
     assert b'Voc\xc3\xaa foi desconectado' in response.data
 
-def test_condominio_list(client, supervisor_user, test_condominio):
-    """Testa a listagem de condomínios."""
+def test_property_list(client, supervisor_user, test_property):
+    """Testa a listagem de propriedades."""
     # Faz login primeiro
     client.post('/auth/login', data={
         'email': 'supervisor@example.com',
         'password': 'supervisor123'
     })
     
-    response = client.get('/condominio/')
+    response = client.get('/property/')
     assert response.status_code == 200
-    assert b'Test Condominio' in response.data
+    assert b'Test Property' in response.data
 
-def test_condominio_create(client, supervisor_user):
-    """Testa a criação de um condomínio."""
+def test_property_create(client, supervisor_user):
+    """Testa a criação de uma propriedade."""
     # Faz login primeiro
     client.post('/auth/login', data={
         'email': 'supervisor@example.com',
         'password': 'supervisor123'
     })
     
-    response = client.post('/condominio/create', data={
-        'nome': 'Novo Condomínio',
-        'endereco': 'Nova Rua, 123',
+    response = client.post('/property/create', data={
+        'nome': 'New Property',
+        'endereco': 'New Address',
         'numero_apartamentos': 20
     }, follow_redirects=True)
     
     assert response.status_code == 200
-    assert b'Condom\xc3\xadnio criado com sucesso' in response.data
+    assert b'Propriedade criada com sucesso' in response.data
 
-def test_atividade_list(client, supervisor_user, test_atividade):
+def test_activity_list(client, supervisor_user, test_activity):
     """Testa a listagem de atividades."""
-    # Faz login primeiro
-    client.post('/auth/login', data={
-        'email': 'supervisor@example.com',
-        'password': 'supervisor123'
-    })
-    
-    response = client.get('/atividade/')
+    response = client.get('/activity/')
     assert response.status_code == 200
-    assert b'Test Atividade' in response.data
+    assert b'Test Activity' in response.data
 
-def test_atividade_create(client, supervisor_user, test_condominio):
+def test_activity_create(client, supervisor_user, test_property):
     """Testa a criação de uma atividade."""
-    # Faz login primeiro
-    client.post('/auth/login', data={
-        'email': 'supervisor@example.com',
-        'password': 'supervisor123'
+    response = client.post('/activity/create', data={
+        'title': 'Test Activity',
+        'description': 'Test Description',
+        'property': test_property.id,
+        'responsible': supervisor_user.id,
+        'delivery_date': '2024-12-31',
+        'status': 'pending'
     })
-    response = client.post('/atividade/create', data={
-        'titulo': 'Nova Atividade',
-        'descricao': 'Descrição da nova atividade',
-        'condominio': test_condominio.id,
-        'responsavel': supervisor_user.id,
-        'data_entrega': '2024-12-31',
-        'status': 'pendente'
-    }, follow_redirects=True)
     assert response.status_code == 200
-    assert b'Atividade criada com sucesso' in response.data
+    assert b'Activity created successfully' in response.data
 
-def test_atividade_update(client, supervisor_user, test_atividade):
+def test_activity_update(client, supervisor_user, test_activity):
     """Testa a atualização de uma atividade."""
-    # Faz login primeiro
-    client.post('/auth/login', data={
-        'email': 'supervisor@example.com',
-        'password': 'supervisor123'
+    response = client.post(f'/activity/{test_activity.id}/update', data={
+        'title': 'Updated Activity',
+        'description': 'Updated Description',
+        'status': 'in_progress',
+        'delivery_date': '2024-12-31'
     })
-    
-    response = client.post(f'/atividade/{test_atividade.id}/update', data={
-        'status': 'em_andamento',
-        'descricao': 'Descrição atualizada'
-    }, follow_redirects=True)
-    
     assert response.status_code == 200
-    assert b'Atividade atualizada com sucesso' in response.data
+    assert b'Activity updated successfully' in response.data
 
 def test_unauthorized_access(client):
     """Testa o acesso não autorizado a rotas protegidas."""
-    response = client.get('/condominio/create')
+    response = client.get('/property/create')
     assert response.status_code == 302  # Redirecionamento para login
     
-    response = client.get('/atividade/create')
+    response = client.get('/activity/create')
     assert response.status_code == 302  # Redirecionamento para login
 
 def test_admin_only_routes(client, admin_user):
@@ -137,4 +121,8 @@ def test_admin_only_routes(client, admin_user):
     })
     
     response = client.get('/admin/users')
-    assert response.status_code == 200  # Acesso permitido 
+    assert response.status_code == 200  # Acesso permitido
+
+def test_property_create_page(client, supervisor_user):
+    response = client.get('/property/create')
+    assert response.status_code == 200 

@@ -1,79 +1,131 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
-from app.forms.atividade import NovaAtividadeForm
-from app.models.atividade import Atividade
-from app.models.condominio import Condominio
+from app.models.activity import Activity
+from app.models.property import Property
 from app.models.user import User
 from app.extensions import db
 from datetime import datetime
+from app.forms.activity import NewActivityForm
 
-activity = Blueprint('activity', __name__)
+activity = Blueprint('activity', __name__, url_prefix='/activity')
 
-@activity.route('/activities/new', methods=['GET', 'POST'])
+@activity.route('/')
 @login_required
-def new_activity():
-    form = NovaAtividadeForm()
-    # Popula o select de condomínios
-    condominios = Condominio.query.filter_by(is_active=True).all()
-    form.condominio.choices = [(c.id, c.nome) for c in condominios]
-    # Popula o select de responsáveis (todos os usuários ativos)
-    users = User.query.filter_by(is_active=True).all()
-    form.responsavel.choices = [(u.id, u.username) for u in users]
-
-    if form.validate_on_submit():
-        atividade = Atividade(
-            condominio_id=form.condominio.data,
-            responsavel_id=form.responsavel.data,
-            criado_por_id=current_user.id,
-            descricao=form.descricao.data,
-            data_entrega=form.data_entrega.data,
-            resolvida=False,
-            status='pendente'
-        )
-        db.session.add(atividade)
-        db.session.commit()
-        flash('Atividade criada com sucesso!', 'success')
-        return redirect(url_for('main.home'))
-    return render_template('activity/new.html', form=form)
-
-@activity.route('/atividade/nova', methods=['POST'])
-@login_required
-def criar_atividade():
-    form = NovaAtividadeForm()
-    condominios = Condominio.query.filter_by(is_active=True).all()
-    form.condominio.choices = [(c.id, c.nome) for c in condominios]
-    users = User.query.filter_by(is_active=True).all()
-    form.responsavel.choices = [(u.id, u.username) for u in users]
-
-    if form.validate_on_submit():
-        # Conversão da data_entrega (string para date)
-        data_entrega_str = form.data_entrega.data
-        data_entrega = None
-        if data_entrega_str:
-            try:
-                if '-' in data_entrega_str:
-                    data_entrega = datetime.strptime(data_entrega_str, '%Y-%m-%d').date()
-                else:
-                    data_entrega = datetime.strptime(data_entrega_str, '%d/%m/%Y').date()
-            except Exception:
-                flash('Data da entrega inválida. Use o formato dd/mm/aaaa.', 'danger')
-                next_url = request.form.get('next') or request.referrer or url_for('main.home')
-                return redirect(next_url)
-        atividade = Atividade(
-            condominio_id=form.condominio.data,
-            responsavel_id=form.responsavel.data,
-            criado_por_id=current_user.id,
-            atividade=form.atividade.data,
-            descricao=form.descricao.data,
-            data_entrega=data_entrega,
-            resolvida=False,
-            status='pendente'
-        )
-        db.session.add(atividade)
-        db.session.commit()
-        flash('Atividade criada com sucesso!', 'success')
+def list():
+    """List all activities for the user."""
+    if current_user.is_admin:
+        activities = Activity.query.all()
+    elif current_user.is_supervisor:
+        activities = Activity.query.filter(
+            (Activity.responsible_id == current_user.id) |
+            (Activity.created_by_id == current_user.id)
+        ).all()
     else:
-        flash('Erro ao criar atividade. Verifique os campos e tente novamente.', 'danger')
+        activities = Activity.query.filter_by(responsible_id=current_user.id).all()
+    
+    properties = Property.query.filter_by(is_active=True).all()
+    users = User.query.filter_by(is_active=True).all()
+    return render_template('activity/list.html', activities=activities, properties=properties, users=users)
 
-    next_url = request.form.get('next') or request.referrer or url_for('main.home')
-    return redirect(next_url) 
+@activity.route('/create', methods=['GET', 'POST'])
+@login_required
+def create():
+    if current_user.role not in ['admin', 'supervisor']:
+        flash('Você não tem permissão para criar atividades', 'danger')
+        return redirect(url_for('main.home'))
+
+    form = NewActivityForm()
+    form.property.choices = [(p.id, p.name) for p in Property.query.filter_by(is_active=True).all()]
+    form.responsible.choices = [(u.id, u.name) for u in User.query.filter_by(is_active=True).all()]
+    
+    if request.method == 'POST':
+        if form.validate_on_submit():
+            try:
+                activity = Activity(
+                    title=form.title.data,
+                    description=form.description.data,
+                    property_id=form.property.data,
+                    responsible_id=form.responsible.data,
+                    delivery_date=form.delivery_date.data,
+                    status='pending'
+                )
+                db.session.add(activity)
+                db.session.commit()
+                flash('Atividade criada com sucesso', 'success')
+                return redirect(url_for('activity.list'))
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Erro ao criar atividade: {str(e)}', 'danger')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    flash(f'Erro no campo {field}: {error}', 'danger')
+    
+    return render_template('activity/create.html', form=form)
+
+@activity.route('/<int:id>/update', methods=['POST'])
+@login_required
+def update(id):
+    activity = Activity.query.get_or_404(id)
+    
+    if not current_user.is_admin and current_user.id != activity.responsible_id:
+        flash('Acesso não autorizado', 'danger')
+        return redirect(url_for('main.home'))
+        
+    try:
+        status = request.form.get('status')
+        description = request.form.get('description')
+        
+        if status and status not in ['pending', 'in_progress', 'completed']:
+            raise ValueError('Status inválido')
+            
+        if status:
+            activity.status = status
+        if description:
+            activity.description = description
+            
+        db.session.commit()
+        flash('Atividade atualizada com sucesso', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao atualizar atividade: {str(e)}', 'danger')
+        
+    return redirect(url_for('activity.list'))
+    
+@activity.route('/<int:id>/delete', methods=['POST'])
+@login_required
+def delete(id):
+    activity = Activity.query.get_or_404(id)
+    
+    if not current_user.is_admin and current_user.id != activity.responsible_id:
+        flash('Acesso não autorizado', 'danger')
+        return redirect(url_for('main.home'))
+        
+    try:
+        db.session.delete(activity)
+        db.session.commit()
+        flash('Atividade excluída com sucesso', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao excluir atividade: {str(e)}', 'danger')
+        
+    return redirect(url_for('activity.list'))
+
+@activity.route('/<int:id>/complete', methods=['POST'])
+@login_required
+def complete(id):
+    activity = Activity.query.get_or_404(id)
+    
+    if not current_user.is_admin and current_user.id != activity.responsible_id:
+        flash('Acesso não autorizado', 'danger')
+        return redirect(url_for('main.home'))
+        
+    try:
+        activity.status = 'completed'
+        db.session.commit()
+        flash('Atividade concluída com sucesso', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao concluir atividade: {str(e)}', 'danger')
+        
+    return redirect(url_for('activity.list')) 

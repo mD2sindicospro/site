@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Sistema de Gestão de Condomínios{% endblock %}</title>
+    <title>{% block title %}Property Management System{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -305,27 +305,44 @@
                         </li>
                         {% if current_user.role == 'supervisor' or current_user.role == 'user' %}
                             <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('condominio.list') }}">
-                                    <i class="fas fa-building"></i> Condomínios
+                                <a class="nav-link" href="{{ url_for('property.list') }}">
+                                    <i class="fas fa-building"></i> Properties
                                 </a>
                             </li>
                         {% endif %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('atividade.list') }}">
+                            <a class="nav-link" href="{{ url_for('activity.list') }}">
                                 <i class="fas fa-tasks"></i> Atividades
                             </a>
                         </li>
+                        {% if current_user.is_admin or current_user.is_supervisor %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('main.approvals') }}">
+                                <i class="fas fa-check-circle"></i> Approvals
+                            </a>
+                        </li>
+                        {% endif %}
                         {% if current_user.is_admin %}
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('admin.admin_dashboard') }}">
-                                    <i class="fas fa-cogs"></i> Administração
-                                </a>
-                            </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('admin.admin_dashboard') }}">
+                                <i class="fas fa-cogs"></i> Administração
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('main.reports') }}">
+                                <i class="fas fa-chart-bar"></i> Reports
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('main.archive') }}">
+                                <i class="fas fa-archive"></i> Archive
+                            </a>
+                        </li>
                         {% endif %}
                         {% if current_user.is_authenticated %}
                             <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('main.atualizacoes') }}">
-                                    <i class="fas fa-bell"></i> Atualizações
+                                <a class="nav-link" href="{{ url_for('main.updates') }}">
+                                    <i class="fas fa-bell"></i> Updates
                                 </a>
                             </li>
                         {% endif %}
@@ -368,6 +385,107 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    {% block scripts %}{% endblock %}
+    {% block scripts %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/inputmask/5.0.8/inputmask.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Máscara para telefone no modal de edição
+        var telInput = document.getElementById('edit_administrador_telefone');
+        if (telInput) {
+            Inputmask({ mask: '(99) 99999-9999', showMaskOnHover: false }).mask(telInput);
+        }
+
+        // Carregar opções do modal de nova atividade
+        var createAtividadeModal = document.getElementById('createAtividadeModal');
+        if (createAtividadeModal) {
+            createAtividadeModal.addEventListener('show.bs.modal', function () {
+                fetch('/activity/api/choices')
+                    .then(response => response.json())
+                    .then(data => {
+                        var condSelect = document.getElementById('condominium');
+                        var respSelect = document.getElementById('responsible');
+                        if (condSelect && respSelect) {
+                            condSelect.innerHTML = '<option value="">Select a condominium</option>';
+                            data.properties.forEach(function(p) {
+                                var option = new Option(p.nome, p.id);
+                                $('#property').append(option);
+                            });
+                            respSelect.innerHTML = '<option value="">Select a responsible</option>';
+                            data.responsaveis.forEach(function(u) {
+                                respSelect.innerHTML += `<option value="${u.id}">${u.nome}</option>`;
+                            });
+                        }
+                    });
+            });
+        }
+    });
+    </script>
+    {% endblock %}
+
+    <!-- Modal Nova Atividade -->
+    <div class="modal fade" id="createAtividadeModal" tabindex="-1" aria-labelledby="createAtividadeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createAtividadeModalLabel">Nova Atividade</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="{{ url_for('activity.create') }}">
+                        <input type="hidden" name="csrf_token" value="{{ form.csrf_token }}">
+                        <div class="mb-3">
+                            <label for="condominium" class="form-label">Condominium</label>
+                            <select class="form-select" id="condominium" name="condominium" required>
+                                <option value="">Select a condominium</option>
+                                {% if new_activity_form is defined %}
+                                    {% for id, name in new_activity_form.condominium.choices %}
+                                        <option value="{{ id }}">{{ name }}</option>
+                                    {% endfor %}
+                                {% endif %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="responsible" class="form-label">Responsible</label>
+                            <select class="form-select" id="responsible" name="responsible" required>
+                                <option value="">Select a responsible</option>
+                                {% if new_activity_form is defined %}
+                                    {% for id, name in new_activity_form.responsible.choices %}
+                                        <option value="{{ id }}">{{ name }}</option>
+                                    {% endfor %}
+                                {% endif %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="delivery_date" class="form-label">Delivery Date</label>
+                            <input type="date" class="form-control" id="delivery_date" name="delivery_date" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="property" class="form-label">Property</label>
+                            <select class="form-select" id="property" name="property" required>
+                                <option value="">Select a property</option>
+                                {% if new_activity_form is defined %}
+                                    {% for id, name in new_activity_form.property.choices %}
+                                        <option value="{{ id }}">{{ name }}</option>
+                                    {% endfor %}
+                                {% endif %}
+                            </select>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Create Activity</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html> 

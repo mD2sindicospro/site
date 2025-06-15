@@ -1,4 +1,50 @@
-# Sistema de Gestão de Atividades
+# Activity Management System
+
+A Flask-based activity management system for property management and task tracking.
+
+## Features
+
+### Activity Management
+- Activity creation
+- Activity status tracking
+- Activity assignment
+- Activity approval workflow
+- Activity statistics
+
+### Property Management
+- Property registration
+- Property details
+- Property statistics
+
+### User Management
+- User registration
+- Role-based access control
+- User profile management
+
+### Communication
+- Message system
+- Notifications
+- Activity updates
+
+## Technical Details
+
+### Models
+- Activity
+- Property
+- User
+- Message
+
+### Routes
+- Activity routes
+- Property routes
+- User routes
+- Message routes
+
+### Templates
+- Activity templates
+- Property templates
+- User templates
+- Message templates
 
 ## Descrição
 Sistema de gestão de atividades desenvolvido em Flask para controle e acompanhamento de tarefas em condomínios.
@@ -29,7 +75,7 @@ pip install -r requirements.txt
 ```
 
 4. Configure as variáveis de ambiente:
-Crie um arquivo `.env` na raiz do projeto com as seguintes variáveis:
+Create a `.env` file in the project root with the following variables:
 ```env
 SECRET_KEY=sua_chave_secreta
 DATABASE_URL=sqlite:///site.db
@@ -70,14 +116,14 @@ site-m2d/
 │   ├── routes/              # Rotas da aplicação
 │   ├── forms/               # Formulários
 │   ├── templates/           # Templates HTML
-│   └── static/              # Arquivos estáticos (CSS, JS, imagens)
+│   └── static/              # Static files (CSS, JS, images)
 ├── migrations/              # Migrações do banco de dados
 ├── logs/                    # Logs da aplicação
 ├── tests/                   # Testes automatizados
 ├── venv/                    # Ambiente virtual
 ├── .env                     # Variáveis de ambiente
 ├── requirements.txt         # Dependências do projeto
-└── run.py                   # Arquivo principal de execução
+└── run.py                   # Main execution file
 ```
 
 ## Funcionalidades Principais
@@ -111,7 +157,7 @@ O sistema mantém logs detalhados em `logs/site.log` com as seguintes informaç�
 - Data e hora
 - Nível do log (INFO, WARNING, ERROR)
 - Mensagem
-- Arquivo e linha onde o log foi gerado
+- File and line where the log was generated
 
 ## Testes
 
@@ -134,4 +180,4 @@ Para reportar problemas ou solicitar novas funcionalidades, abra uma issue no re
 
 ## Licença
 
-Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes. 
+This project is under the MIT license. See the `LICENSE` file for more details. 
