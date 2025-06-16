@@ -1,15 +1,12 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, BooleanField, SelectField
-from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
+from wtforms import StringField, SubmitField, BooleanField, SelectField
+from wtforms.validators import DataRequired, Length, Email, ValidationError
 from app.models.user import User
 
 class LoginForm(FlaskForm):
     email = StringField('Email', validators=[
         DataRequired(message='O email é obrigatório'),
         Email(message='Por favor, insira um email válido')
-    ])
-    password = PasswordField('Senha', validators=[
-        DataRequired(message='A senha é obrigatória')
     ])
     remember = BooleanField('Lembrar-me')
     submit = SubmitField('Entrar')
@@ -18,17 +15,12 @@ class LoginForm(FlaskForm):
         user = User.query.filter_by(email=email.data).first()
         if not user:
             raise ValidationError('Email não encontrado')
-
-    def validate_password(self, password):
-        user = User.query.filter_by(email=self.email.data).first()
-        if user and not user.verify_password(password.data):
-            raise ValidationError('Senha incorreta')
+        if not user.is_active:
+            raise ValidationError('Usuário inativo. Entre em contato com o administrador.')
 
 class RegistrationForm(FlaskForm):
     name = StringField('Nome', validators=[DataRequired(), Length(min=2, max=100)])
     email = StringField('Email', validators=[DataRequired(), Email()])
-    password = PasswordField('Senha', validators=[DataRequired()])
-    confirm_password = PasswordField('Confirmar Senha', validators=[DataRequired(), EqualTo('password')])
     role = SelectField('Tipo de Usuário', choices=[
         ('user', 'Normal'),
         ('supervisor', 'Supervisor'),

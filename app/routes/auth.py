@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, current_user, logout_user, login_required
-from app.extensions import db, bcrypt
+from app.extensions import db
 from app.models.user import User
 from app.forms.auth import LoginForm
 
@@ -14,18 +14,14 @@ def login():
     
     if request.method == 'POST' and form.validate_on_submit():
         email = form.email.data
-        password = form.password.data
         user = User.query.filter_by(email=email).first()
         
-        if user and user.check_password(password):
-            if not user.is_active:
-                flash('Usuário inativo. Entre em contato com o administrador.', 'danger')
-                return render_template('auth/login.html', form=form)
-            login_user(user)
+        if user and user.is_active:
+            login_user(user, remember=form.remember.data)
             flash('Bem-vindo!', 'success')
             return redirect(url_for('main.home'))
         else:
-            flash('Email ou senha inválidos', 'danger')
+            flash('Email não encontrado ou usuário inativo', 'danger')
             
     return render_template('auth/login.html', form=form)
 
