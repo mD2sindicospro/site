@@ -433,7 +433,7 @@
                 <div class="modal-body">
                     <form method="POST" action="{{ url_for('activity.create') }}">
                         {% if form is defined %}
-                            <input type="hidden" name="csrf_token" value="{{ form.csrf_token }}">
+                        <input type="hidden" name="csrf_token" value="{{ form.csrf_token }}">
                         {% endif %}
                         <div class="mb-3">
                             <label for="property" class="form-label">Condomínio</label>
