@@ -19,11 +19,13 @@ def create_app(config_name='default'):
     from app.routes.main import main
     from app.routes.admin import admin
     from app.routes.activity import activity
+    from app.routes.property import property_bp
     
     app.register_blueprint(auth, url_prefix='/auth')
     app.register_blueprint(main)
     app.register_blueprint(admin, url_prefix='/admin')
     app.register_blueprint(activity, url_prefix='/activity')
+    app.register_blueprint(property_bp)
 
     @app.context_processor
     def inject_new_activity_form():

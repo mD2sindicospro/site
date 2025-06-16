@@ -306,7 +306,7 @@
                         {% if current_user.role == 'supervisor' or current_user.role == 'user' %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{{ url_for('property.list') }}">
-                                    <i class="fas fa-building"></i> Properties
+                                    <i class="fas fa-building"></i> Condomínios
                                 </a>
                             </li>
                         {% endif %}
@@ -318,7 +318,7 @@
                         {% if current_user.is_admin or current_user.is_supervisor %}
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('main.approvals') }}">
-                                <i class="fas fa-check-circle"></i> Approvals
+                                <i class="fas fa-check-circle"></i> Aprovações
                             </a>
                         </li>
                         {% endif %}
@@ -330,19 +330,19 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('main.reports') }}">
-                                <i class="fas fa-chart-bar"></i> Reports
+                                <i class="fas fa-chart-bar"></i> Relatórios
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('main.archive') }}">
-                                <i class="fas fa-archive"></i> Archive
+                                <i class="fas fa-archive"></i> Arquivo
                             </a>
                         </li>
                         {% endif %}
                         {% if current_user.is_authenticated %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{{ url_for('main.updates') }}">
-                                    <i class="fas fa-bell"></i> Updates
+                                    <i class="fas fa-bell"></i> Atualizações
                                 </a>
                             </li>
                         {% endif %}
@@ -402,15 +402,15 @@
                 fetch('/activity/api/choices')
                     .then(response => response.json())
                     .then(data => {
-                        var condSelect = document.getElementById('condominium');
+                        var propertySelect = document.getElementById('property');
                         var respSelect = document.getElementById('responsible');
-                        if (condSelect && respSelect) {
-                            condSelect.innerHTML = '<option value="">Select a condominium</option>';
+                        if (propertySelect && respSelect) {
+                            propertySelect.innerHTML = '<option value="">Selecione um condomínio</option>';
                             data.properties.forEach(function(p) {
                                 var option = new Option(p.nome, p.id);
-                                $('#property').append(option);
+                                propertySelect.appendChild(option);
                             });
-                            respSelect.innerHTML = '<option value="">Select a responsible</option>';
+                            respSelect.innerHTML = '<option value="">Selecione um responsável</option>';
                             data.responsaveis.forEach(function(u) {
                                 respSelect.innerHTML += `<option value="${u.id}">${u.nome}</option>`;
                             });
@@ -432,22 +432,24 @@
                 </div>
                 <div class="modal-body">
                     <form method="POST" action="{{ url_for('activity.create') }}">
-                        <input type="hidden" name="csrf_token" value="{{ form.csrf_token }}">
+                        {% if form is defined %}
+                            <input type="hidden" name="csrf_token" value="{{ form.csrf_token }}">
+                        {% endif %}
                         <div class="mb-3">
-                            <label for="condominium" class="form-label">Condominium</label>
-                            <select class="form-select" id="condominium" name="condominium" required>
-                                <option value="">Select a condominium</option>
+                            <label for="property" class="form-label">Condomínio</label>
+                            <select class="form-select" id="property" name="property" required>
+                                <option value="">Selecione um condomínio</option>
                                 {% if new_activity_form is defined %}
-                                    {% for id, name in new_activity_form.condominium.choices %}
+                                    {% for id, name in new_activity_form.property.choices %}
                                         <option value="{{ id }}">{{ name }}</option>
                                     {% endfor %}
                                 {% endif %}
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label for="responsible" class="form-label">Responsible</label>
+                            <label for="responsible" class="form-label">Responsável</label>
                             <select class="form-select" id="responsible" name="responsible" required>
-                                <option value="">Select a responsible</option>
+                                <option value="">Selecione um responsável</option>
                                 {% if new_activity_form is defined %}
                                     {% for id, name in new_activity_form.responsible.choices %}
                                         <option value="{{ id }}">{{ name }}</option>
@@ -456,31 +458,20 @@
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label for="title" class="form-label">Title</label>
+                            <label for="title" class="form-label">Título</label>
                             <input type="text" class="form-control" id="title" name="title" required>
                         </div>
                         <div class="mb-3">
-                            <label for="description" class="form-label">Description</label>
+                            <label for="description" class="form-label">Descrição</label>
                             <textarea class="form-control" id="description" name="description" rows="3"></textarea>
                         </div>
                         <div class="mb-3">
-                            <label for="delivery_date" class="form-label">Delivery Date</label>
+                            <label for="delivery_date" class="form-label">Data de Entrega</label>
                             <input type="date" class="form-control" id="delivery_date" name="delivery_date" required>
                         </div>
-                        <div class="mb-3">
-                            <label for="property" class="form-label">Property</label>
-                            <select class="form-select" id="property" name="property" required>
-                                <option value="">Select a property</option>
-                                {% if new_activity_form is defined %}
-                                    {% for id, name in new_activity_form.property.choices %}
-                                        <option value="{{ id }}">{{ name }}</option>
-                                    {% endfor %}
-                                {% endif %}
-                            </select>
-                        </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn btn-primary">Create Activity</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Criar Atividade</button>
                         </div>
                     </form>
                 </div>

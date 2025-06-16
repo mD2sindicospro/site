@@ -50,12 +50,15 @@ class User(UserMixin, db.Model):
     def set_password(self, password):
         if not password:
             raise ValueError('Senha é obrigatória')
-        if len(password) < 6:
-            raise ValueError('Senha deve ter no mínimo 6 caracteres')
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
+        if not self.password_hash or not isinstance(self.password_hash, str) or len(self.password_hash) < 10:
+            return False
+        try:
+            return check_password_hash(self.password_hash, password)
+        except Exception:
+            return False
 
     def verify_password(self, password):
         return self.check_password(password)

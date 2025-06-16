@@ -81,7 +81,7 @@ def home():
 
     return render_template('main/home.html',
                          activities=activities,
-                         total_pages=total_pages,
+                         total_paginas=total_pages,
                          current_page=current_page,
                          form=form)
 
@@ -190,7 +190,7 @@ def home_post():
 
     return render_template('main/home.html',
                          activities=activities,
-        total_pages=total_pages,
+        total_paginas=total_pages,
                          page=page,
         percent_pending=percent_pending,
         percent_in_progress=percent_in_progress,

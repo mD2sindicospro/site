@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Reports{% endblock %}
+{% block title %}Relatórios{% endblock %}
 {% block content %}
 <div class="container-fluid">
     <div class="row mb-3 justify-content-center">
@@ -7,39 +7,39 @@
             <form method="get">
                 <div class="row g-2 align-items-end mb-2">
                     <div class="col-md-6">
-                        <label for="filtro_condominium" class="form-label mb-1">Propriedade</label>
-                        <select id="filtro_condominium" name="condominium" class="form-select">
-                            <option value="">All</option>
-                            {% for c in form.condominium.choices %}
-                                <option value="{{ c[0] }}" {% if request.args.get('condominium')|int == c[0] %}selected{% endif %}>{{ c[1] }}</option>
+                        <label for="filtro_property" class="form-label mb-1">Condomínio</label>
+                        <select id="filtro_property" name="property" class="form-select">
+                            <option value="">Todos</option>
+                            {% for p in form.property.choices %}
+                                <option value="{{ p[0] }}" {% if request.args.get('property')|int == p[0] %}selected{% endif %}>{{ p[1] }}</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="col-md-6">
                         <label for="filtro_status" class="form-label mb-1">Status</label>
                         <select id="filtro_status" name="status" class="form-select">
-                            <option value="">All</option>
-                            <option value="pending" {% if request.args.get('status') == 'pending' %}selected{% endif %}>Pending</option>
-                            <option value="in progress" {% if request.args.get('status') == 'in progress' %}selected{% endif %}>In Progress</option>
-                            <option value="correction" {% if request.args.get('status') == 'correction' %}selected{% endif %}>Correction</option>
-                            <option value="delayed" {% if request.args.get('status') == 'delayed' %}selected{% endif %}>Delayed</option>
-                            <option value="completed" {% if request.args.get('status') == 'completed' %}selected{% endif %}>Completed</option>
-                            <option value="not completed" {% if request.args.get('status') == 'not completed' %}selected{% endif %}>Not Completed</option>
+                            <option value="">Todos</option>
+                            <option value="pending" {% if request.args.get('status') == 'pending' %}selected{% endif %}>Pendente</option>
+                            <option value="in progress" {% if request.args.get('status') == 'in progress' %}selected{% endif %}>Em Andamento</option>
+                            <option value="correction" {% if request.args.get('status') == 'correction' %}selected{% endif %}>Correção</option>
+                            <option value="delayed" {% if request.args.get('status') == 'delayed' %}selected{% endif %}>Atrasada</option>
+                            <option value="completed" {% if request.args.get('status') == 'completed' %}selected{% endif %}>Concluída</option>
+                            <option value="not completed" {% if request.args.get('status') == 'not completed' %}selected{% endif %}>Não Realizada</option>
                         </select>
                     </div>
                 </div>
                 <div class="row g-2 align-items-end">
                     <div class="col-md-3">
-                        <label for="data_lancamento_inicio" class="form-label mb-1">Start Date</label>
+                        <label for="data_lancamento_inicio" class="form-label mb-1">Data Inicial</label>
                         <input type="text" id="data_lancamento_inicio" name="data_lancamento_inicio" class="form-control datepicker-br" placeholder="dd/mm/aaaa" value="{{ request.args.get('data_lancamento_inicio', '') }}">
                     </div>
                     <div class="col-md-3">
-                        <label for="data_lancamento_fim" class="form-label mb-1">End Date</label>
+                        <label for="data_lancamento_fim" class="form-label mb-1">Data Final</label>
                         <input type="text" id="data_lancamento_fim" name="data_lancamento_fim" class="form-control datepicker-br" placeholder="dd/mm/aaaa" value="{{ request.args.get('data_lancamento_fim', '') }}">
                     </div>
                     <div class="col-md-3 d-flex justify-content-end gap-2 align-items-end">
-                        <a href="{{ url_for('main.reports') }}" class="btn btn-secondary">Clear Filters</a>
-                        <button type="submit" class="btn btn-primary">Filter</button>
+                        <a href="{{ url_for('main.reports') }}" class="btn btn-secondary">Limpar Filtros</a>
+                        <button type="submit" class="btn btn-primary">Filtrar</button>
                     </div>
                 </div>
             </form>
@@ -94,12 +94,12 @@
         <table class="table table-bordered text-center align-middle table-atividades" width="100%" cellspacing="0">
             <thead>
                 <tr>
-                    <th>Name</th>
-                    <th>Pending</th>
-                    <th>In Progress</th>
-                    <th>Delayed</th>
-                    <th>Completed</th>
-                    <th>Not Completed</th>
+                    <th>Nome</th>
+                    <th>Pendente</th>
+                    <th>Em Andamento</th>
+                    <th>Atrasada</th>
+                    <th>Concluída</th>
+                    <th>Não Realizada</th>
                 </tr>
             </thead>
             <tbody>
@@ -126,11 +126,11 @@
                                     <table class="table table-borderless table-hover mb-0" style="font-size:0.88em;">
                                         <thead class="table-light">
                                             <tr style="border-bottom:1px solid #e0e0e0;">
-                                                <th class="fw-semibold">Propriedade</th>
-                                                <th class="fw-semibold">Start Date</th>
-                                                <th class="fw-semibold">Activity</th>
+                                                <th class="fw-semibold">Condomínio</th>
+                                                <th class="fw-semibold">Data Inicial</th>
+                                                <th class="fw-semibold">Atividade</th>
                                                 <th class="fw-semibold">Responsável</th>
-                                                <th class="fw-semibold">Due Date</th>
+                                                <th class="fw-semibold">Prazo</th>
                                                 <th class="fw-semibold">Status</th>
                                             </tr>
                                         </thead>
@@ -151,13 +151,13 @@
                                     </table>
                                 </div>
                                 {% else %}
-                                <div class="text-muted small">No open tasks</div>
+                                <div class="text-muted small">Nenhuma tarefa em aberto</div>
                                 {% endif %}
                             </div>
                         </td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="6">No supervisor found</td></tr>
+                    <tr><td colspan="6">Nenhum supervisor encontrado</td></tr>
                     {% endfor %}
                 {% elif responsaveis_graficos is defined %}
                     {% for u in responsaveis_graficos.values() %}
@@ -182,11 +182,11 @@
                                     <table class="table table-borderless table-hover mb-0" style="font-size:0.88em;">
                                         <thead class="table-light">
                                             <tr style="border-bottom:1px solid #e0e0e0;">
-                                                <th class="fw-semibold">Propriedade</th>
-                                                <th class="fw-semibold">Start Date</th>
-                                                <th class="fw-semibold">Activity</th>
+                                                <th class="fw-semibold">Condomínio</th>
+                                                <th class="fw-semibold">Data Inicial</th>
+                                                <th class="fw-semibold">Atividade</th>
                                                 <th class="fw-semibold">Responsável</th>
-                                                <th class="fw-semibold">Due Date</th>
+                                                <th class="fw-semibold">Prazo</th>
                                                 <th class="fw-semibold">Status</th>
                                             </tr>
                                         </thead>
@@ -207,13 +207,13 @@
                                     </table>
                                 </div>
                                 {% else %}
-                                <div class="text-muted small">No open tasks</div>
+                                <div class="text-muted small">Nenhuma tarefa em aberto</div>
                                 {% endif %}
                             </div>
                         </td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="6">No responsible found</td></tr>
+                    <tr><td colspan="6">Nenhum responsável encontrado</td></tr>
                     {% endfor %}
                 {% elif usuarios is defined %}
                     {% for u in usuarios.values() %}
@@ -238,11 +238,11 @@
                                     <table class="table table-borderless table-hover mb-0" style="font-size:0.88em;">
                                         <thead class="table-light">
                                             <tr style="border-bottom:1px solid #e0e0e0;">
-                                                <th class="fw-semibold">Propriedade</th>
-                                                <th class="fw-semibold">Start Date</th>
-                                                <th class="fw-semibold">Activity</th>
+                                                <th class="fw-semibold">Condomínio</th>
+                                                <th class="fw-semibold">Data Inicial</th>
+                                                <th class="fw-semibold">Atividade</th>
                                                 <th class="fw-semibold">Responsável</th>
-                                                <th class="fw-semibold">Due Date</th>
+                                                <th class="fw-semibold">Prazo</th>
                                                 <th class="fw-semibold">Status</th>
                                             </tr>
                                         </thead>
@@ -263,13 +263,13 @@
                                     </table>
                                 </div>
                                 {% else %}
-                                <div class="text-muted small">No open tasks</div>
+                                <div class="text-muted small">Nenhuma tarefa em aberto</div>
                                 {% endif %}
                             </div>
                         </td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="6">No user found</td></tr>
+                    <tr><td colspan="6">Nenhum usuário encontrado</td></tr>
                     {% endfor %}
                 {% endif %}
             </tbody>

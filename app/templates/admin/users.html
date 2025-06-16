@@ -17,11 +17,11 @@
         <thead>
             <tr>
                 <th>ID</th>
-                <th>Name</th>
+                <th>Nome</th>
                 <th>Email</th>
-                <th>Account</th>
+                <th>Tipo de Conta</th>
                 <th>Status</th>
-                <th>Actions</th>
+                <th>Ações</th>
             </tr>
         </thead>
         <tbody>
@@ -33,9 +33,9 @@
                 <td>{{ user.role.upper() }}</td>
                 <td>
                     {% if user.is_active %}
-                        <span class="badge bg-success">Active</span>
+                        <span class="badge bg-success">Ativo</span>
                     {% else %}
-                        <span class="badge bg-danger">Inactive</span>
+                        <span class="badge bg-danger">Inativo</span>
                     {% endif %}
                 </td>
                 <td>
@@ -47,15 +47,23 @@
                             data-email="{{ user.email }}"
                             data-role="{{ user.role }}"
                             data-is-active="{{ 1 if user.is_active else 0 }}"
-                            data-bs-toggle="tooltip" data-bs-placement="top" title="Edit">
+                            data-bs-toggle="tooltip" data-bs-placement="top" title="Editar">
                             <i class="fas fa-edit"></i>
                         </button>
                         {% endif %}
-                        <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#confirmInativarModal"
+                        {% if user.is_active %}
+                        <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#confirmInativarModal"
                             data-user-id="{{ user.id }}" data-name="{{ user.name }}"
-                            data-bs-toggle="tooltip" data-bs-placement="top" title="Deactivate" {% if not user.is_active %}disabled{% endif %}>
+                            data-bs-toggle="tooltip" data-bs-placement="top" title="Inativar">
                             <i class="fas fa-user-slash"></i>
                         </button>
+                        {% else %}
+                        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#confirmAtivarModal"
+                            data-user-id="{{ user.id }}" data-name="{{ user.name }}"
+                            data-bs-toggle="tooltip" data-bs-placement="top" title="Ativar">
+                            <i class="fas fa-user-check"></i>
+                        </button>
+                        {% endif %}
                     </div>
                 </td>
             </tr>
@@ -66,7 +74,7 @@
 
 <!-- Modal Novo Usuário -->
 <div class="modal fade" id="novoUsuarioModal" tabindex="-1" aria-labelledby="novoUsuarioModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="novoUsuarioModalLabel">Novo Usuário</h5>
@@ -76,11 +84,11 @@
                 <form method="POST" action="{{ url_for('admin.manage_users') }}">
                     <div class="row g-3">
                         <div class="col-12 col-md-6">
-                            <label for="name" class="form-label fw-semibold"><i class="fas fa-user me-1"></i> Name</label>
+                            <label for="name" class="form-label fw-semibold"><i class="fas fa-user me-1"></i> Nome</label>
                             <input type="text" class="form-control form-control-lg" id="name" name="name" placeholder="Digite o nome" required>
                         </div>
                         <div class="col-12 col-md-6">
-                            <label for="role" class="form-label fw-semibold"><i class="fas fa-user-tag me-1"></i> Account</label>
+                            <label for="role" class="form-label fw-semibold"><i class="fas fa-user-tag me-1"></i> Tipo de Conta</label>
                             <select class="form-select form-control-lg" id="role" name="role" required>
                                 <option value="user">Normal</option>
                                 <option value="supervisor">Supervisor</option>
@@ -98,13 +106,13 @@
                         <div class="col-12 col-md-6">
                             <label for="is_active" class="form-label fw-semibold"><i class="fas fa-toggle-on me-1"></i> Status</label>
                             <select class="form-select form-control-lg" id="is_active" name="is_active" required>
-                                <option value="1">Active</option>
-                                <option value="0">Inactive</option>
+                                <option value="1">Ativo</option>
+                                <option value="0">Inativo</option>
                             </select>
                         </div>
                         <div class="col-12 col-md-6 d-flex align-items-end justify-content-end gap-2">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn btn-primary">Save</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Salvar</button>
                         </div>
                     </div>
                 </form>
@@ -115,7 +123,7 @@
 
 <!-- Modal Editar Usuário -->
 <div class="modal fade" id="editarUsuarioModal" tabindex="-1" aria-labelledby="editarUsuarioModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="editarUsuarioModalLabel">Editar Usuário</h5>
@@ -126,7 +134,7 @@
                     <input type="hidden" id="edit_user_id" name="edit_user_id">
                     <div class="row g-3">
                         <div class="col-12 col-md-6">
-                            <label for="edit_name" class="form-label fw-semibold"><i class="fas fa-user me-1"></i> Name</label>
+                            <label for="edit_name" class="form-label fw-semibold"><i class="fas fa-user me-1"></i> Nome</label>
                             <input type="text" class="form-control form-control-lg" id="edit_name" name="name" placeholder="Digite o nome" required>
                         </div>
                         <div class="col-12 col-md-6">
@@ -134,7 +142,7 @@
                             <input type="email" class="form-control form-control-lg" id="edit_email" name="email" placeholder="Digite o email" required>
                         </div>
                         <div class="col-12 col-md-6">
-                            <label for="edit_role" class="form-label fw-semibold"><i class="fas fa-user-tag me-1"></i> Account</label>
+                            <label for="edit_role" class="form-label fw-semibold"><i class="fas fa-user-tag me-1"></i> Tipo de Conta</label>
                             <select class="form-select form-control-lg" id="edit_role" name="role" required>
                                 <option value="user">Normal</option>
                                 <option value="supervisor">Supervisor</option>
@@ -144,14 +152,20 @@
                         <div class="col-12 col-md-6">
                             <label for="edit_is_active" class="form-label fw-semibold"><i class="fas fa-toggle-on me-1"></i> Status</label>
                             <select class="form-select form-control-lg" id="edit_is_active" name="edit_is_active" required>
-                                <option value="1">Active</option>
-                                <option value="0">Inactive</option>
+                                <option value="1">Ativo</option>
+                                <option value="0">Inativo</option>
                             </select>
                         </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Save</button>
+                        <div class="row g-3 align-items-end">
+                            <div class="col-12 col-md-6">
+                                <label for="edit_password" class="form-label fw-semibold"><i class="fas fa-key me-1"></i> Senha</label>
+                                <input type="password" class="form-control form-control-lg" id="edit_password" name="edit_password" placeholder="Preencha para alterar a senha">
+                            </div>
+                            <div class="col-12 col-md-6 d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-primary">Salvar</button>
+                            </div>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -161,7 +175,7 @@
 
 <!-- Modal Confirmar Inativação -->
 <div class="modal fade" id="confirmInativarModal" tabindex="-1" aria-labelledby="confirmInativarModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="confirmInativarModalLabel">Confirmar Inativação</h5>
@@ -171,10 +185,32 @@
                 <p>Tem certeza que deseja inativar o usuário <strong id="inativar_user_name"></strong>?</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                 <form method="POST" action="{{ url_for('admin.manage_users') }}">
                     <input type="hidden" id="inativar_user_id" name="inativar_user_id">
-                    <button type="submit" class="btn btn-warning">Deactivate</button>
+                    <button type="submit" class="btn btn-warning">Inativar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Confirmar Ativação -->
+<div class="modal fade" id="confirmAtivarModal" tabindex="-1" aria-labelledby="confirmAtivarModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmAtivarModalLabel">Confirmar Ativação</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja ativar o usuário <strong id="ativar_user_name"></strong>?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="POST" action="{{ url_for('admin.manage_users') }}">
+                    <input type="hidden" id="ativar_user_id" name="ativar_user_id">
+                    <button type="submit" class="btn btn-success">Ativar</button>
                 </form>
             </div>
         </div>
@@ -201,6 +237,15 @@ document.addEventListener('DOMContentLoaded', function() {
       var button = event.relatedTarget;
       document.getElementById('inativar_user_id').value = button.getAttribute('data-user-id');
       document.getElementById('inativar_user_name').textContent = button.getAttribute('data-name');
+    });
+  }
+
+  var confirmAtivarModal = document.getElementById('confirmAtivarModal');
+  if (confirmAtivarModal) {
+    confirmAtivarModal.addEventListener('show.bs.modal', function (event) {
+      var button = event.relatedTarget;
+      document.getElementById('ativar_user_id').value = button.getAttribute('data-user-id');
+      document.getElementById('ativar_user_name').textContent = button.getAttribute('data-name');
     });
   }
 

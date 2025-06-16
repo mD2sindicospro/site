@@ -6,7 +6,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     {% if current_user.is_admin %}
         <h1>Gerenciar Condomínios</h1>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novoCondominiumModal">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newPropertyModal">
             <i class="fas fa-plus"></i> Novo Condomínio
         </button>
     {% endif %}
@@ -30,6 +30,7 @@
                 <th>ID</th>
                 <th>Nome</th>
                 <th>Endereço</th>
+                <th>Aptos</th>
                 <th>Supervisor</th>
                 <th>Status</th>
                 <th>Ações</th>
@@ -41,6 +42,7 @@
                 <td>{{ property.id }}</td>
                 <td>{{ property.name }}</td>
                 <td>{{ property.address }}</td>
+                <td>{{ property.number_of_apartments }}</td>
                 <td>{{ property.supervisor.name if property.supervisor else 'Sem supervisor' }}</td>
                 <td>
                     {% if property.is_active %}
@@ -58,22 +60,45 @@
                             data-endereco="{{ property.address }}"
                             data-supervisor-id="{{ property.supervisor_id }}"
                             data-is-active="{{ 1 if property.is_active else 0 }}"
+                            data-entry-date="{{ property.entry_date.strftime('%d/%m/%Y') if property.entry_date else '' }}"
+                            data-state="{{ property.state }}"
+                            data-numero-apartamentos="{{ property.number_of_apartments }}"
+                            data-administrator-name="{{ property.administrator_name }}"
+                            data-administrator-phone="{{ property.administrator_phone }}"
+                            data-administrator-email="{{ property.administrator_email }}"
                         >
                             <i class="fas fa-edit"></i>
                         </button>
                         {% endif %}
-                        <button class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#confirmInativarModal"
-                            data-property-id="{{ property.id }}" data-nome="{{ property.name }}"
-                            data-bs-toggle="tooltip" data-bs-placement="top" title="Inativar" {% if not property.is_active %}disabled{% endif %}>
-                            <i class="fas fa-user-slash"></i>
+                        <!-- Botão Visualizar -->
+                        <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#viewPropertyModal"
+                            data-property-id="{{ property.id }}"
+                            data-nome="{{ property.name }}"
+                            data-endereco="{{ property.address }}"
+                            data-supervisor="{{ property.supervisor.name if property.supervisor else 'Sem supervisor' }}"
+                            data-is-active="{{ 1 if property.is_active else 0 }}"
+                            data-entry-date="{{ property.entry_date.strftime('%d/%m/%Y') if property.entry_date else '' }}"
+                            data-state="{{ property.state }}"
+                            data-numero-apartamentos="{{ property.number_of_apartments }}"
+                            data-administrator-name="{{ property.administrator_name }}"
+                            data-administrator-phone="{{ property.administrator_phone }}"
+                            data-administrator-email="{{ property.administrator_email }}"
+                        >
+                            <i class="fas fa-eye"></i>
                         </button>
-                        {% if current_user.is_admin and property.id != current_user.id %}
-                        <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#confirmExcluirModal"
-                            data-property-id="{{ property.id }}" data-nome="{{ property.name }}"
-                            data-bs-toggle="tooltip" data-bs-placement="top" title="Excluir">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                        {% endif %}
+                        <!-- Botão Ativar/Inativar -->
+                        <form method="POST" action="{{ url_for('property.list') }}" style="display:inline;">
+                            <input type="hidden" name="toggle_active_property_id" value="{{ property.id }}">
+                            {% if property.is_active %}
+                            <button type="submit" class="btn btn-sm btn-danger" title="Inativar">
+                                <i class="fas fa-user-slash"></i>
+                            </button>
+                            {% else %}
+                            <button type="submit" class="btn btn-sm btn-success" title="Ativar">
+                                <i class="fas fa-user-check"></i>
+                            </button>
+                            {% endif %}
+                        </form>
                     </div>
                 </td>
             </tr>
@@ -99,7 +124,7 @@
                         </div>
                         <div class="col-12 col-md-6">
                             <label for="data_entrada" class="form-label fw-semibold"><i class="fas fa-calendar-alt me-1"></i> Entrada</label>
-                            <input type="date" class="form-control form-control-lg" id="data_entrada" name="data_entrada">
+                            <input type="text" class="form-control form-control-lg" id="data_entrada" name="data_entrada" placeholder="dd/mm/aaaa">
                         </div>
                         <div class="col-12 col-md-6">
                             <label for="endereco" class="form-label fw-semibold"><i class="fas fa-map-marker-alt me-1"></i> Endereço</label>
@@ -206,34 +231,90 @@
                             <input type="text" class="form-control form-control-lg" id="edit_nome" name="nome" placeholder="Digite o nome" required>
                         </div>
                         <div class="col-12 col-md-6">
+                            <label for="edit_data_entrada" class="form-label fw-semibold"><i class="fas fa-calendar-alt me-1"></i> Entrada</label>
+                            <input type="text" class="form-control form-control-lg" id="edit_data_entrada" name="data_entrada" placeholder="dd/mm/aaaa">
+                        </div>
+                        <div class="col-12 col-md-6">
                             <label for="edit_endereco" class="form-label fw-semibold"><i class="fas fa-map-marker-alt me-1"></i> Endereço</label>
                             <input type="text" class="form-control form-control-lg" id="edit_endereco" name="endereco" placeholder="Digite o endereço" required>
                         </div>
                         <div class="col-12 col-md-6">
+                            <label for="edit_estado" class="form-label fw-semibold"><i class="fas fa-flag me-1"></i> Estado</label>
+                            <select class="form-select form-control-lg" id="edit_estado" name="estado" required>
+                                <option value="">Selecione o estado</option>
+                                <option value="AC">Acre</option>
+                                <option value="AL">Alagoas</option>
+                                <option value="AP">Amapá</option>
+                                <option value="AM">Amazonas</option>
+                                <option value="BA">Bahia</option>
+                                <option value="CE">Ceará</option>
+                                <option value="DF">Distrito Federal</option>
+                                <option value="ES">Espírito Santo</option>
+                                <option value="GO">Goiás</option>
+                                <option value="MA">Maranhão</option>
+                                <option value="MT">Mato Grosso</option>
+                                <option value="MS">Mato Grosso do Sul</option>
+                                <option value="MG">Minas Gerais</option>
+                                <option value="PA">Pará</option>
+                                <option value="PB">Paraíba</option>
+                                <option value="PR">Paraná</option>
+                                <option value="PE">Pernambuco</option>
+                                <option value="PI">Piauí</option>
+                                <option value="RJ">Rio de Janeiro</option>
+                                <option value="RN">Rio Grande do Norte</option>
+                                <option value="RS">Rio Grande do Sul</option>
+                                <option value="RO">Rondônia</option>
+                                <option value="RR">Roraima</option>
+                                <option value="SC">Santa Catarina</option>
+                                <option value="SP">São Paulo</option>
+                                <option value="SE">Sergipe</option>
+                                <option value="TO">Tocantins</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6">
                             <label for="edit_supervisor_id" class="form-label fw-semibold"><i class="fas fa-user-tie me-1"></i> Supervisor</label>
                             {% if current_user.is_admin %}
-                            <select class="form-select form-control-lg" id="edit_supervisor_id" name="edit_supervisor_id">
+                            <select class="form-select form-control-lg" id="edit_supervisor_id" name="supervisor_id">
                                 <option value="">(Sem supervisor)</option>
                                 {% for user in supervisores %}
                                 <option value="{{ user.id }}">{{ user.name }}</option>
                                 {% endfor %}
                             </select>
                             {% else %}
-                            <input type="text" class="form-control form-control-lg bg-light" id="edit_supervisor_nome" name="edit_supervisor_nome" readonly>
-                            <input type="hidden" id="edit_supervisor_id" name="edit_supervisor_id">
+                            <input type="text" class="form-control form-control-lg bg-light" id="edit_supervisor_nome" name="supervisor_nome" readonly>
+                            <input type="hidden" id="edit_supervisor_id" name="supervisor_id">
                             {% endif %}
                         </div>
                         <div class="col-12 col-md-6">
                             <label for="edit_is_active" class="form-label fw-semibold"><i class="fas fa-toggle-on me-1"></i> Status</label>
-                            <select class="form-select form-control-lg" id="edit_is_active" name="edit_is_active" required>
+                            <select class="form-select form-control-lg" id="edit_is_active" name="is_active" required>
                                 <option value="1">Ativo</option>
                                 <option value="0">Inativo</option>
                             </select>
                         </div>
+                        <div class="col-12 col-md-6">
+                            <label for="edit_numero_apartamentos" class="form-label fw-semibold"><i class="fas fa-building me-1"></i> Número de Apartamentos</label>
+                            <input type="number" class="form-control form-control-lg" id="edit_numero_apartamentos" name="numero_apartamentos" min="1" required>
+                        </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    <hr>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label for="edit_administrador_nome" class="form-label fw-semibold"><i class="fas fa-user me-1"></i> Síndico/Administrador</label>
+                            <input type="text" class="form-control form-control-lg" id="edit_administrador_nome" name="administrador_nome" placeholder="Digite o nome">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="edit_administrador_telefone" class="form-label fw-semibold"><i class="fas fa-phone me-1"></i> Telefone</label>
+                            <input type="text" class="form-control form-control-lg" id="edit_administrador_telefone" name="administrador_telefone" placeholder="(99) 99999-9999">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="edit_administrador_email" class="form-label fw-semibold"><i class="fas fa-envelope me-1"></i> Email</label>
+                            <input type="email" class="form-control form-control-lg" id="edit_administrador_email" name="administrador_email" placeholder="Digite o email">
+                        </div>
+                        <div class="col-12 col-md-6 d-flex align-items-end justify-content-end gap-2">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Salvar</button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -241,58 +322,71 @@
     </div>
 </div>
 
-<!-- Modal Confirmar Inativação -->
-<div class="modal fade" id="confirmInativarModal" tabindex="-1" aria-labelledby="confirmInativarModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+<!-- Modal Visualizar Condomínio -->
+<div class="modal fade" id="viewPropertyModal" tabindex="-1" aria-labelledby="viewPropertyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="confirmInativarModalLabel">Confirmar Inativação</h5>
+                <h5 class="modal-title" id="viewPropertyModalLabel">Visualizar Condomínio</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p>Tem certeza que deseja inativar o condomínio <strong id="inactivate_property_name"></strong>?</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <form method="POST" action="{{ url_for('property.list') }}">
-                    <input type="hidden" id="inactivate_property_id" name="inactivate_property_id">
-                    <button type="submit" class="btn btn-warning">Inativar</button>
-                </form>
+                <div class="row g-3">
+                    <div class="col-12 col-md-6 mb-2">
+                        <span class="fw-semibold"><i class="fas fa-building me-1"></i> Nome:</span> <span id="view_nome"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-2">
+                        <span class="fw-semibold"><i class="fas fa-calendar-alt me-1"></i> Entrada:</span> <span id="view_data_entrada"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-2">
+                        <span class="fw-semibold"><i class="fas fa-map-marker-alt me-1"></i> Endereço:</span> <span id="view_endereco"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-2">
+                        <span class="fw-semibold"><i class="fas fa-flag me-1"></i> Estado:</span> <span id="view_estado"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-2">
+                        <span class="fw-semibold"><i class="fas fa-user-tie me-1"></i> Supervisor:</span> <span id="view_supervisor"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-2">
+                        <span class="fw-semibold"><i class="fas fa-toggle-on me-1"></i> Status:</span> <span id="view_is_active"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-2">
+                        <span class="fw-semibold"><i class="fas fa-building me-1"></i> Nº de Apartamentos:</span> <span id="view_numero_apartamentos"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-2">
+                        <span class="fw-semibold"><i class="fas fa-user me-1"></i> Síndico/Administrador:</span> <span id="view_administrador_nome"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-2">
+                        <span class="fw-semibold"><i class="fas fa-phone me-1"></i> Telefone:</span> <span id="view_administrador_telefone"></span>
+                    </div>
+                    <div class="col-12 col-md-6 mb-2">
+                        <span class="fw-semibold"><i class="fas fa-envelope me-1"></i> Email:</span> <span id="view_administrador_email"></span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal Confirmar Exclusão -->
-<div class="modal fade" id="confirmExcluirModal" tabindex="-1" aria-labelledby="confirmExcluirModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="confirmExcluirModalLabel">Confirmar Exclusão</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p>Tem certeza que deseja excluir o condomínio <strong id="delete_property_name"></strong>?</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <form method="POST" action="{{ url_for('property.list') }}">
-                    <input type="hidden" id="delete_property_id" name="delete_property_id">
-                    <button type="submit" class="btn btn-danger">Excluir</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
+<style>
+    .modal-title, .form-label, .form-control, .form-select {
+        font-size: 1.1rem !important;
+    }
+    .form-control, .form-select {
+        height: 45px;
+    }
+</style>
 
 {% endblock %}
 
 {% block scripts %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js"></script>
 <script>
 $(document).ready(function(){
     $('#administrador_telefone').mask('(00) 00000-0000');
-    $('#data_entrada').mask('00/00/0000');
     $('#administrador_email').on('input', function() {
         this.value = this.value.replace(/[^a-zA-Z0-9@._-]/g, '');
     });
@@ -325,38 +419,53 @@ document.addEventListener('DOMContentLoaded', function() {
             var endereco = button.getAttribute('data-endereco');
             var supervisorId = button.getAttribute('data-supervisor-id');
             var isActive = button.getAttribute('data-is-active');
+            var entryDate = button.getAttribute('data-entry-date');
+            var state = button.getAttribute('data-state');
+            var numeroApartamentos = button.getAttribute('data-numero-apartamentos');
+            var administradorNome = button.getAttribute('data-administrator-name');
+            var administradorTelefone = button.getAttribute('data-administrator-phone');
+            var administradorEmail = button.getAttribute('data-administrator-email');
 
             document.getElementById('edit_property_id').value = propertyId;
             document.getElementById('edit_nome').value = nome;
             document.getElementById('edit_endereco').value = endereco;
             document.getElementById('edit_supervisor_id').value = supervisorId;
             document.getElementById('edit_is_active').value = isActive;
+            if (entryDate) document.getElementById('edit_data_entrada').value = entryDate;
+            if (state) document.getElementById('edit_estado').value = state;
+            if (numeroApartamentos) document.getElementById('edit_numero_apartamentos').value = numeroApartamentos;
+            if (administradorNome) document.getElementById('edit_administrador_nome').value = administradorNome;
+            if (administradorTelefone) document.getElementById('edit_administrador_telefone').value = administradorTelefone;
+            if (administradorEmail) document.getElementById('edit_administrador_email').value = administradorEmail;
         });
     }
 
-    // Configurar modal de inativação
-    var confirmInativarModal = document.getElementById('confirmInativarModal');
-    if (confirmInativarModal) {
-        confirmInativarModal.addEventListener('show.bs.modal', function (event) {
+    // Configurar modal de visualização
+    var viewModal = document.getElementById('viewPropertyModal');
+    if (viewModal) {
+        viewModal.addEventListener('show.bs.modal', function (event) {
             var button = event.relatedTarget;
-            var propertyId = button.getAttribute('data-property-id');
-            var propertyName = button.getAttribute('data-nome');
+            var nome = button.getAttribute('data-nome') || '-';
+            var endereco = button.getAttribute('data-endereco') || '-';
+            var supervisor = button.getAttribute('data-supervisor') || '-';
+            var isActive = button.getAttribute('data-is-active');
+            var entryDate = button.getAttribute('data-entry-date') || '-';
+            var state = button.getAttribute('data-state') || '-';
+            var numeroApartamentos = button.getAttribute('data-numero-apartamentos') || '-';
+            var administradorNome = button.getAttribute('data-administrator-name') || '-';
+            var administradorTelefone = button.getAttribute('data-administrator-phone') || '-';
+            var administradorEmail = button.getAttribute('data-administrator-email') || '-';
 
-            document.getElementById('inactivate_property_id').value = propertyId;
-            document.getElementById('inactivate_property_name').textContent = propertyName;
-        });
-    }
-
-    // Configurar modal de exclusão
-    var confirmExcluirModal = document.getElementById('confirmExcluirModal');
-    if (confirmExcluirModal) {
-        confirmExcluirModal.addEventListener('show.bs.modal', function (event) {
-            var button = event.relatedTarget;
-            var propertyId = button.getAttribute('data-property-id');
-            var propertyName = button.getAttribute('data-nome');
-
-            document.getElementById('delete_property_id').value = propertyId;
-            document.getElementById('delete_property_name').textContent = propertyName;
+            document.getElementById('view_nome').textContent = nome;
+            document.getElementById('view_endereco').textContent = endereco;
+            document.getElementById('view_supervisor').textContent = supervisor;
+            document.getElementById('view_is_active').textContent = isActive === '1' ? 'Ativo' : 'Inativo';
+            document.getElementById('view_numero_apartamentos').textContent = numeroApartamentos;
+            document.getElementById('view_administrador_nome').textContent = administradorNome;
+            document.getElementById('view_administrador_telefone').textContent = administradorTelefone;
+            document.getElementById('view_administrador_email').textContent = administradorEmail;
+            document.getElementById('view_data_entrada').textContent = entryDate && entryDate !== '-' ? formatarData(entryDate) : '-';
+            document.getElementById('view_estado').textContent = state;
         });
     }
 
@@ -392,6 +501,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
+    });
+
+    flatpickr("#data_entrada", {
+        dateFormat: "d/m/Y",
+        locale: "pt"
+    });
+    flatpickr("#edit_data_entrada", {
+        dateFormat: "d/m/Y",
+        locale: "pt"
     });
 });
 </script>

@@ -23,7 +23,7 @@ def manage_users():
         return redirect(url_for('main.home'))
 
     # Cadastro de novo usuário (apenas admin)
-    if request.method == 'POST' and not request.form.get('edit_user_id') and not request.form.get('inativar_user_id') and not request.form.get('excluir_user_id'):
+    if request.method == 'POST' and not request.form.get('edit_user_id') and not request.form.get('inativar_user_id') and not request.form.get('excluir_user_id') and not request.form.get('ativar_user_id'):
         name = request.form.get('name')
         email = request.form.get('email')
         password = request.form.get('password')
@@ -36,8 +36,8 @@ def manage_users():
             flash('Email já cadastrado', 'danger')
             return redirect(url_for('admin.manage_users'))
         password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
-        user = User(name=name, email=email, password=password, role=role)
-        user.password_hash = password_hash
+        user = User(name=name, email=email, role=role)
+        user.set_password(password)
         user.is_active = is_active
         db.session.add(user)
         db.session.commit()
@@ -76,6 +76,21 @@ def manage_users():
             user.is_active = False
             db.session.commit()
             flash('Usuário inativado com sucesso!', 'success')
+        else:
+            flash('Usuário não encontrado.', 'danger')
+        return redirect(url_for('admin.manage_users'))
+
+    # Ativação de usuário (admin e supervisor)
+    if request.method == 'POST' and request.form.get('ativar_user_id'):
+        if not (current_user.is_admin or current_user.is_supervisor):
+            flash('Você não tem permissão para ativar usuários.', 'danger')
+            return redirect(url_for('admin.manage_users'))
+        user_id = request.form.get('ativar_user_id')
+        user = User.query.get(user_id)
+        if user:
+            user.is_active = True
+            db.session.commit()
+            flash('Usuário ativado com sucesso!', 'success')
         else:
             flash('Usuário não encontrado.', 'danger')
         return redirect(url_for('admin.manage_users'))
