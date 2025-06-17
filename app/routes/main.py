@@ -41,12 +41,12 @@ def serialize_activity(activity):
         'title': activity.title,
         'description': activity.description,
         'status': activity.status,
-        'priority': activity.priority,
-        'property': activity.property.name if activity.property else None,
-        'responsible': activity.responsible.name if activity.responsible else None,
-        'created_at': activity.created_at.strftime('%d/%m/%Y %H:%M'),
-        'updated_at': activity.updated_at.strftime('%d/%m/%Y %H:%M') if activity.updated_at else None,
-        'delivery_date': activity.delivery_date.strftime('%d/%m/%Y') if activity.delivery_date else None
+        'property': {'id': activity.property.id, 'nome': activity.property.name} if activity.property else None,
+        'responsavel': {'id': activity.responsible.id, 'username': activity.responsible.name} if activity.responsible else None,
+        'data_lancamento': activity.data_lancamento.strftime('%d/%m/%Y') if hasattr(activity, 'data_lancamento') and activity.data_lancamento else '',
+        'data_entrega': activity.delivery_date.strftime('%d/%m/%Y') if activity.delivery_date else '',
+        'correction_reason': getattr(activity, 'correction_reason', None),
+        'cancellation_reason': getattr(activity, 'cancellation_reason', None),
     }
 
 @main.route('/')
@@ -83,7 +83,9 @@ def home():
                          activities=activities,
                          total_paginas=total_pages,
                          current_page=current_page,
-                         form=form)
+                         form=form,
+                         current_date=datetime.now().date(),
+                         prazo_humano=prazo_humano)
 
 @main.route('/home', methods=['GET', 'POST'])
 @login_required
@@ -141,8 +143,6 @@ def home_post():
     # Add completion_date and status_color for each activity
     for a in activities:
         a.completion_date = getattr(a, 'completion_date', None)
-        if a.resolved and not a.completion_date:
-            a.completion_date = a.delivery_date
         hoje = datetime.now().date()
         if hasattr(a, 'status') and a.status == 'completed':
             a.status_color = 'primary'
@@ -190,14 +190,16 @@ def home_post():
 
     return render_template('main/home.html',
                          activities=activities,
-        total_paginas=total_pages,
+                         total_paginas=total_pages,
                          page=page,
-        percent_pending=percent_pending,
-        percent_in_progress=percent_in_progress,
-        percent_completed=percent_completed,
-        percent_overdue=percent_overdue,
-        percent_not_completed=percent_not_completed,
-                         total_properties_supervisor=total_properties_supervisor)
+                         percent_pending=percent_pending,
+                         percent_in_progress=percent_in_progress,
+                         percent_completed=percent_completed,
+                         percent_overdue=percent_overdue,
+                         percent_not_completed=percent_not_completed,
+                         total_properties_supervisor=total_properties_supervisor,
+                         current_date=datetime.now().date(),
+                         prazo_humano=prazo_humano)
 
 @main.route('/minhas-atividades')
 @login_required
@@ -241,8 +243,6 @@ def my_activities():
 
     for a in activities:
         a.completion_date = getattr(a, 'completion_date', None)
-        if a.resolved and not a.completion_date:
-            a.completion_date = a.delivery_date
         hoje = datetime.now().date()
         if hasattr(a, 'status') and a.status == 'completed':
             a.status_color = 'primary'
@@ -296,7 +296,6 @@ def concluir_atividade(atividade_id):
     
     try:
         atividade.status = 'completed'
-        atividade.resolved = True
         atividade.completion_date = datetime.now()
         db.session.commit()
         current_app.logger.info(f'Atividade {atividade_id} concluída por {current_user.name}')
@@ -320,7 +319,6 @@ def desistir_atividade(atividade_id):
             flash('É obrigatório informar o motivo do cancelamento.', 'danger')
             return redirect(url_for('main.my_activities'))
         atividade.status = 'not_completed'
-        atividade.resolved = False
         atividade.cancellation_reason = cancellation_reason
         db.session.commit()
         # Mensagem para o criador
@@ -354,7 +352,7 @@ def approvals():
         # Admin pode ver todas as atividades
         atividades = Activity.query.filter_by(status='completed').order_by(Activity.created_at.desc()).all()
     
-    return render_template('main/approvals.html', atividades=atividades)
+    return render_template('main/approvals.html', atividades=atividades, prazo_humano=prazo_humano, current_date=datetime.now().date())
 
 @main.route('/aprovar-atividade/<int:atividade_id>', methods=['POST'])
 @login_required
@@ -373,7 +371,6 @@ def aprovar_atividade(atividade_id):
             return redirect(url_for('main.approvals'))
     if atividade.status == 'completed':
         atividade.status = 'completed'
-        atividade.resolved = True
         atividade.approved_by_id = current_user.id
         db.session.commit()
         # Mensagem para o responsável
@@ -408,7 +405,6 @@ def recusar_atividade(atividade_id):
             return redirect(url_for('main.approvals'))
     if atividade.status == 'completed':
         atividade.status = 'not_completed'
-        atividade.resolved = False
         db.session.commit()
         flash('Atividade recusada com sucesso!', 'warning')
     else:
@@ -474,8 +470,6 @@ def archive():
 
     for a in atividades:
         a.completion_date = getattr(a, 'completion_date', None)
-        if a.resolved and not a.completion_date:
-            a.completion_date = a.delivery_date
         hoje = datetime.now().date()
         if hasattr(a, 'status') and a.status == 'completed':
             a.status_color = 'primary'
@@ -536,7 +530,6 @@ def solicitar_correcao_atividade(atividade_id):
             flash('É obrigatório informar o motivo da correção.', 'danger')
             return redirect(url_for('main.approvals'))
         atividade.status = 'correction'
-        atividade.resolved = False
         atividade.motivo_correcao = motivo
         db.session.commit()
         # Mensagem para o responsável
@@ -578,8 +571,7 @@ def supervisor_activities():
     atividades = atividades_query.offset((page - 1) * per_page).limit(per_page).all()
     for a in atividades:
         a.completion_date = getattr(a, 'completion_date', None)
-        if a.resolved and not a.completion_date:
-            a.completion_date = a.delivery_date
+        hoje = datetime.now().date()
         if hasattr(a, 'status') and a.status == 'completed':
             a.status_color = 'primary'
         elif hasattr(a, 'status') and a.status == 'completed':
@@ -646,7 +638,7 @@ def exportar_excel():
         worksheet = workbook.add_worksheet()
         
         # Add headers
-        headers = ['ID', 'Título', 'Descrição', 'Status', 'Prioridade', 'Condomínio', 'Responsável', 
+        headers = ['ID', 'Título', 'Descrição', 'Status', 'Condomínio', 'Responsável', 
                   'Data de Criação', 'Data de Atualização', 'Data de Entrega']
         for col, header in enumerate(headers):
             worksheet.write(0, col, header)
@@ -658,7 +650,6 @@ def exportar_excel():
                 atividade.title,
                 atividade.description,
                 atividade.status,
-                atividade.priority,
                 atividade.property.name if atividade.property else None,
                 atividade.responsible.name if atividade.responsible else None,
                 atividade.created_at.strftime('%d/%m/%Y %H:%M'),
@@ -904,7 +895,7 @@ def reports():
 @main.route('/atividades-admin')
 @login_required
 def atividades_admin():
-    if not current_user.is_admin():
+    if not current_user.is_admin:
         abort(403)
     properties = Property.query.filter_by(is_active=True).all()
     filtro_property = request.args.get('property', type=int)

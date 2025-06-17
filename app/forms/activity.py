@@ -9,10 +9,4 @@ class NewActivityForm(FlaskForm):
     property = SelectField('Condomínio', coerce=int, validators=[DataRequired()])
     responsible = SelectField('Responsável', coerce=int, validators=[DataRequired()])
     delivery_date = DateField('Data de Entrega', format='%Y-%m-%d', validators=[DataRequired()])
-    status = SelectField('Status', choices=[
-        ('pending', 'Pendente'),
-        ('in_progress', 'Em Andamento'),
-        ('completed', 'Concluída'),
-        ('cancelled', 'Cancelada')
-    ], validators=[DataRequired()])
     resolved = BooleanField('Resolvida') 

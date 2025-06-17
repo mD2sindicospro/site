@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from app.models.activity import Activity
 from app.models.property import Property
@@ -6,6 +6,7 @@ from app.models.user import User
 from app.extensions import db
 from datetime import datetime
 from app.forms.activity import NewActivityForm
+from flask_wtf.csrf import generate_csrf
 
 activity = Blueprint('activity', __name__, url_prefix='/activity')
 
@@ -47,7 +48,8 @@ def create():
                     property_id=form.property.data,
                     responsible_id=form.responsible.data,
                     delivery_date=form.delivery_date.data,
-                    status='pending'
+                    status='pending',
+                    created_by_id=current_user.id
                 )
                 db.session.add(activity)
                 db.session.commit()
@@ -60,8 +62,8 @@ def create():
             for field, errors in form.errors.items():
                 for error in errors:
                     flash(f'Erro no campo {field}: {error}', 'danger')
-    
-    return render_template('activity/create.html', form=form)
+    # Em qualquer outro caso, redireciona para a lista de atividades
+    return redirect(url_for('activity.list'))
 
 @activity.route('/<int:id>/update', methods=['POST'])
 @login_required
@@ -128,4 +130,15 @@ def complete(id):
         db.session.rollback()
         flash(f'Erro ao concluir atividade: {str(e)}', 'danger')
         
-    return redirect(url_for('activity.list')) 
+    return redirect(url_for('activity.list'))
+
+@activity.route('/api/choices')
+@login_required
+def api_choices():
+    properties = Property.query.filter_by(is_active=True).all()
+    responsaveis = User.query.filter_by(is_active=True).all()
+    return jsonify({
+        'properties': [{'id': p.id, 'nome': p.name} for p in properties],
+        'responsaveis': [{'id': u.id, 'nome': u.name} for u in responsaveis],
+        'csrf_token': generate_csrf()
+    }) 

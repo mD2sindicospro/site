@@ -1,6 +1,7 @@
 from app.extensions import db, login_manager
 from flask_login import UserMixin
 from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -12,6 +13,7 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     name = db.Column(db.String(100))
+    password_hash = db.Column(db.String(128))
     role = db.Column(db.String(20), default='user', nullable=False)
     is_active = db.Column(db.Boolean, default=True)
     deactivated_at = db.Column(db.DateTime)
@@ -28,7 +30,7 @@ class User(UserMixin, db.Model):
     # Lista de papéis válidos
     VALID_ROLES = ['user', 'supervisor', 'admin']
 
-    def __init__(self, email, role='user', is_active=True, name=None):
+    def __init__(self, email, role='user', is_active=True, name=None, password=None):
         if not email:
             raise ValueError("Email é obrigatório")
         if not name:
@@ -39,6 +41,16 @@ class User(UserMixin, db.Model):
         self.role = role
         self.is_active = is_active
         self.name = name
+        if password:
+            self.set_password(password)
+
+    def set_password(self, password):
+        """Define a senha do usuário."""
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        """Verifica se a senha está correta."""
+        return check_password_hash(self.password_hash, password)
 
     @property
     def is_admin(self):

@@ -1,69 +1,90 @@
 {% extends "base.html" %}
+{% from 'utils/translations.html' import translate_status, get_status_class %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Atividades</h5>
-                </div>
-                <div class="card-body">
-                    {% if activities %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Título</th>
-                                    <th>Condomínio</th>
-                                    <th>Responsável</th>
-                                    <th>Status</th>
-                                    <th>Data Entrega</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for activity in activities %}
-                                <tr>
-                                    <td>{{ activity.titulo }}</td>
-                                    <td>{{ activity.property.nome }}</td>
-                                    <td>{{ activity.responsavel.username }}</td>
-                                    <td>
-                                        <span class="badge {% if activity.status == 'pendente' %}bg-warning{% elif activity.status == 'em_andamento' %}bg-info{% else %}bg-success{% endif %}">
-                                            {{ activity.status|title }}
-                                        </span>
-                                    </td>
-                                    <td>{{ activity.data_entrega.strftime('%d/%m/%Y') if activity.data_entrega else 'Não definida' }}</td>
-                                    <td>
-                                        <div class="btn-group">
-                                            <a href="{{ url_for('activity.view', id=activity.id) }}" class="btn btn-sm btn-info">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            <a href="{{ url_for('activity.edit', id=activity.id) }}" class="btn btn-sm btn-warning">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteActivityModal{{ activity.id }}">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+<div class="container-fluid">
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 rounded-top text-center">
+            <h6 class="m-0 font-weight-bold text-white" style="text-transform: uppercase;">ATIVIDADES</h6>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-bordered text-center align-middle table-atividades" width="100%" cellspacing="0" style="font-size:0.85em;">
+            <thead>
+                <tr>
+                    <th>Título</th>
+                    <th>Condomínio</th>
+                    <th>Responsável</th>
+                    <th>Status</th>
+                    <th>Data Entrega</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if activities %}
+                    {% for activity in activities %}
+                    <tr style="height:32px;">
+                        <td>{{ activity.title }}</td>
+                        <td>{{ activity.property.name if activity.property else '—' }}</td>
+                        <td>{{ activity.responsible.name if activity.responsible else '—' }}</td>
+                        <td>
+                            <span class="badge {{ get_status_class(activity.status) }}">
+                                {{ translate_status(activity.status) }}
+                            </span>
+                        </td>
+                        <td>{{ activity.delivery_date.strftime('%d/%m/%Y') if activity.delivery_date else '—' }}</td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{{ url_for('activity.list') }}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center">Nenhuma atividade encontrada.</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% for activity in activities %}
+<!-- Modal de Edição -->
+<div class="modal fade" id="editActivityModal{{ activity.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Atividade</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{{ url_for('activity.update', id=activity.id) }}" method="POST">
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select name="status" id="status" class="form-select">
+                            <option value="pending" {% if activity.status == 'pending' %}selected{% endif %}>Pendente</option>
+                            <option value="in_progress" {% if activity.status == 'in_progress' %}selected{% endif %}>Em Andamento</option>
+                            <option value="completed" {% if activity.status == 'completed' %}selected{% endif %}>Concluída</option>
+                        </select>
                     </div>
-                    {% else %}
-                    <div class="alert alert-info">
-                        Nenhuma atividade encontrada.
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Descrição</label>
+                        <textarea name="description" id="description" class="form-control" rows="3">{{ activity.description }}</textarea>
                     </div>
-                    {% endif %}
-                </div>
+                    <div class="text-end">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 </div>
 
-{% for activity in activities %}
 <!-- Modal de Exclusão -->
 <div class="modal fade" id="deleteActivityModal{{ activity.id }}" tabindex="-1">
     <div class="modal-dialog">
@@ -73,7 +94,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Tem certeza que deseja excluir a atividade "{{ activity.titulo }}"?</p>
+                <p>Tem certeza que deseja excluir a atividade "{{ activity.title }}"?</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -85,6 +106,11 @@
     </div>
 </div>
 {% endfor %}
+
+<style>
+.table-atividades td, .table-atividades th { font-size: 0.80em !important; padding-top: 0.3em !important; padding-bottom: 0.3em !important; }
+.table-atividades tr { min-height: 28px !important; height: 28px !important; }
+</style>
 {% endblock %}
 
 {% block scripts %}
