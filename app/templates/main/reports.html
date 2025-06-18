@@ -143,7 +143,7 @@
                                                 <td>{{ t.atividade }}</td>
                                                 <td>{{ t.responsavel['username'] }}</td>
                                                 <td>{{ t.data_entrega }}</td>
-                                                <td><span class="badge badge-status-{{ t.status.replace(' ', '-').lower() }} align-middle" style="font-size:0.85em; padding:0.3em 0.7em;">{{ t.status.upper() }}</span></td>
+                                                <td><span class="badge badge-status-{{ t.status.replace(' ', '-').lower() }} align-middle" style="font-size:0.85em; padding:0.3em 0.7em;">{{ translate_status(t.status).upper() }}</span></td>
                                             </tr>
                                             {% endif %}
                                             {% endfor %}
@@ -199,7 +199,7 @@
                                                 <td>{{ t.atividade }}</td>
                                                 <td>{{ t.responsavel['username'] }}</td>
                                                 <td>{{ t.data_entrega }}</td>
-                                                <td><span class="badge badge-status-{{ t.status.replace(' ', '-').lower() }} align-middle" style="font-size:0.85em; padding:0.3em 0.7em;">{{ t.status.upper() }}</span></td>
+                                                <td><span class="badge badge-status-{{ t.status.replace(' ', '-').lower() }} align-middle" style="font-size:0.85em; padding:0.3em 0.7em;">{{ translate_status(t.status).upper() }}</span></td>
                                             </tr>
                                             {% endif %}
                                             {% endfor %}
@@ -255,7 +255,7 @@
                                                 <td>{{ t.atividade }}</td>
                                                 <td>{{ t.responsavel['username'] }}</td>
                                                 <td>{{ t.data_entrega }}</td>
-                                                <td><span class="badge badge-status-{{ t.status.replace(' ', '-').lower() }} align-middle" style="font-size:0.85em; padding:0.3em 0.7em;">{{ t.status.upper() }}</span></td>
+                                                <td><span class="badge badge-status-{{ t.status.replace(' ', '-').lower() }} align-middle" style="font-size:0.85em; padding:0.3em 0.7em;">{{ translate_status(t.status).upper() }}</span></td>
                                             </tr>
                                             {% endif %}
                                             {% endfor %}
@@ -288,6 +288,7 @@
 .badge-status-delayed { background: #c0392b !important; color: #fff; }
 .badge-status-completed { background: #6ee7b7 !important; color: #222; }
 .badge-status-not-completed { background: #c0392b !important; color: #fff; }
+.badge-status-realizada, .badge-status-approved { background: #2ecc71 !important; color: #fff; }
 .table-atividades td, .table-atividades th { font-size: 0.95rem; }
 /* Ajuste para tabela expandida de tarefas */
 .table-atividades .shadow-sm table {

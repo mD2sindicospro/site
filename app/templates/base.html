@@ -259,19 +259,30 @@
             }
         }
 
-        .badge-status-pendente, .badge-status-em-andamento, .badge-status-ultimo-dia, .badge-status-atrasada, .badge-status-realizada, .badge-status-finalizada, .badge-status-não-realizada {
-            padding: 0.25em 0.6em !important;
-            font-size: 0.85em !important;
-            border-radius: 6px;
-        }
         .badge-status-pendente { background: #7b8a97 !important; color: #fff; }
         .badge-status-em-andamento { background: #ff9800 !important; color: #fff; }
         .badge-status-ultimo-dia { background: #ff5252 !important; color: #fff; }
-        .badge-status-atrasada { background: #c0392b !important; color: #fff; }
-        .badge-status-realizada { background: #6ee7b7 !important; color: #222; }
+        .badge-status-atrasada, .badge-status-overdue { background: #c0392b !important; color: #fff; }
+        .badge-status-realizada, .badge-status-approved { background: #2ecc71 !important; color: #fff; }
         .badge-status-finalizada { background: #2ecc71 !important; color: #fff; }
-        .badge-status-não-realizada { background: #c0392b !important; color: #fff; }
-        .table-atividades td, .table-atividades th { font-size: 0.95rem; }
+        .badge-status-não-realizada, .badge-status-not_completed { background: #c0392b !important; color: #fff; }
+        .badge-status-completed { background: #6ee7b7 !important; color: #222; }
+        .badge-status-correção, .badge-status-correction { background: #ff9800 !important; color: #fff; }
+        .badge-status-cancelada, .badge-status-cancelled { background: #bdbdbd !important; color: #222; }
+        .badge-status-pending { background: #7b8a97 !important; color: #fff; }
+        .badge-status-in_progress { background: #ff9800 !important; color: #fff; }
+        .badge-status-completed { background: #6ee7b7 !important; color: #222; }
+        .badge-status-approved { background: #2ecc71 !important; color: #fff; }
+        .badge-status-not_completed { background: #c0392b !important; color: #fff; }
+        .badge-status-correction { background: #ff9800 !important; color: #fff; }
+        .badge-status-cancelled { background: #bdbdbd !important; color: #222; }
+        .badge {
+            padding: 0.18em 0.6em !important;
+            font-size: 0.85em !important;
+            border-radius: 5px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
 
         /* Dropdown customizado para combinar com o header */
         .dropdown-menu .dropdown-item.active, .dropdown-menu .dropdown-item:active {
@@ -324,8 +335,8 @@
                         {% endif %}
                         {% if current_user.is_admin or current_user.is_supervisor %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('main.approvals') }}">
-                                <i class="fas fa-check-circle"></i> Aprovações
+                            <a class="nav-link" href="{{ url_for('main.reports') }}">
+                                <i class="fas fa-chart-bar"></i> Relatórios
                             </a>
                         </li>
                         {% endif %}
@@ -333,11 +344,6 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('admin.admin_dashboard') }}">
                                 <i class="fas fa-cogs"></i> Administração
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('main.reports') }}">
-                                <i class="fas fa-chart-bar"></i> Relatórios
                             </a>
                         </li>
                         <li class="nav-item">

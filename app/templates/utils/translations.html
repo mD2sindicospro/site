@@ -15,5 +15,12 @@
 {% endmacro %}
 
 {% macro get_status_class(status) %}
-    badge-status-{{ status.replace(' ', '-').lower() }}
+    {%- if status == 'pending' %}badge-status-pendente
+    {%- elif status == 'in_progress' %}badge-status-em-andamento
+    {%- elif status == 'completed' %}badge-status-finalizada
+    {%- elif status == 'overdue' %}badge-status-atrasada
+    {%- elif status == 'not_completed' %}badge-status-não-realizada
+    {%- elif status == 'correction' %}badge-status-correção
+    {%- else %}badge-status-{{ status.replace(' ', '-').lower() }}
+    {%- endif %}
 {% endmacro %} 

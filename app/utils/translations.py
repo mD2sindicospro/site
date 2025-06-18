@@ -7,7 +7,13 @@ STATUS_TRANSLATIONS = {
     'in_progress': 'Em Andamento',
     'completed': 'Concluída',
     'cancelled': 'Cancelada',
-    'correction': 'Correção'
+    'correction': 'Correção',
+    'approved': 'Realizada',
+    'not_completed': 'Não Realizada',
+    'overdue': 'Atrasada',
+    'finalizada': 'Finalizada',
+    'realizada': 'Realizada',
+    'correção': 'Correção',
 }
 
 def translate_status(status):

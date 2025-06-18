@@ -28,9 +28,7 @@
                         <td>{{ activity.property.name if activity.property else '—' }}</td>
                         <td>{{ activity.responsible.name if activity.responsible else '—' }}</td>
                         <td>
-                            <span class="badge {{ get_status_class(activity.status) }}">
-                                {{ translate_status(activity.status) }}
-                            </span>
+                            <span class="badge {{ get_status_class(activity.status) }}">{{ translate_status(activity.status).upper() }}</span>
                         </td>
                         <td>{{ activity.delivery_date.strftime('%d/%m/%Y') if activity.delivery_date else '—' }}</td>
                         <td>

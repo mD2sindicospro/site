@@ -11,6 +11,7 @@ import pandas as pd
 from io import BytesIO
 from fpdf import FPDF
 import xlsxwriter
+from app.utils.translations import translate_status
 
 main = Blueprint('main', __name__)
 
@@ -39,11 +40,12 @@ def serialize_activity(activity):
     return {
         'id': activity.id,
         'title': activity.title,
+        'atividade': activity.title,
         'description': activity.description,
         'status': activity.status,
         'property': {'id': activity.property.id, 'nome': activity.property.name} if activity.property else None,
         'responsavel': {'id': activity.responsible.id, 'username': activity.responsible.name} if activity.responsible else None,
-        'data_lancamento': activity.data_lancamento.strftime('%d/%m/%Y') if hasattr(activity, 'data_lancamento') and activity.data_lancamento else '',
+        'data_lancamento': activity.created_at.strftime('%d/%m/%Y') if activity.created_at else '',
         'data_entrega': activity.delivery_date.strftime('%d/%m/%Y') if activity.delivery_date else '',
         'correction_reason': getattr(activity, 'correction_reason', None),
         'cancellation_reason': getattr(activity, 'cancellation_reason', None),
@@ -79,13 +81,57 @@ def home():
     form.property.choices = [(p.id, p.name) for p in Property.query.filter_by(is_active=True).all()]
     form.responsible.choices = [(u.id, u.name) for u in User.query.filter_by(is_active=True).all()]
 
+    # Cálculo dos percentuais para usuário normal, supervisor e admin
+    percent_pending = percent_in_progress = percent_completed = percent_overdue = percent_not_completed = 0
+    total_properties_supervisor = 0
+    if current_user.role == 'user':
+        properties_ativos = Property.query.filter_by(is_active=True).all()
+        active_ids = [p.id for p in properties_ativos]
+        activities_user = Activity.query.filter(Activity.responsible_id == current_user.id, Activity.property_id.in_(active_ids)).all()
+        total_user = len(activities_user)
+        if total_user > 0:
+            percent_pending = round(len([a for a in activities_user if a.status == 'pending']) / total_user * 100)
+            percent_in_progress = round(len([a for a in activities_user if a.status == 'in_progress']) / total_user * 100)
+            percent_completed = round(len([a for a in activities_user if a.status == 'completed']) / total_user * 100)
+            percent_overdue = round(len([a for a in activities_user if a.status == 'overdue']) / total_user * 100)
+            percent_not_completed = round(len([a for a in activities_user if a.status == 'not_completed']) / total_user * 100)
+    elif current_user.role == 'supervisor':
+        properties_ativos = Property.query.filter_by(supervisor_id=current_user.id, is_active=True).all()
+        total_properties_supervisor = len(properties_ativos)
+        active_ids = [p.id for p in properties_ativos]
+        activities_supervisor = Activity.query.filter(Activity.property_id.in_(active_ids)).all()
+        total_supervisor = len(activities_supervisor)
+        if total_supervisor > 0:
+            percent_pending = round(len([a for a in activities_supervisor if a.status == 'pending']) / total_supervisor * 100)
+            percent_in_progress = round(len([a for a in activities_supervisor if a.status == 'in_progress']) / total_supervisor * 100)
+            percent_completed = round(len([a for a in activities_supervisor if a.status == 'completed']) / total_supervisor * 100)
+            percent_overdue = round(len([a for a in activities_supervisor if a.status == 'overdue']) / total_supervisor * 100)
+            percent_not_completed = round(len([a for a in activities_supervisor if a.status == 'not_completed']) / total_supervisor * 100)
+    elif current_user.role == 'admin':
+        activities_admin = Activity.query.all()
+        total_admin = len(activities_admin)
+        if total_admin > 0:
+            percent_pending = round(len([a for a in activities_admin if a.status == 'pending']) / total_admin * 100)
+            percent_in_progress = round(len([a for a in activities_admin if a.status == 'in_progress']) / total_admin * 100)
+            percent_completed = round(len([a for a in activities_admin if a.status == 'completed']) / total_admin * 100)
+            percent_overdue = round(len([a for a in activities_admin if a.status == 'overdue']) / total_admin * 100)
+            percent_not_completed = round(len([a for a in activities_admin if a.status == 'not_completed']) / total_admin * 100)
+
     return render_template('main/home.html',
                          activities=activities,
                          total_paginas=total_pages,
                          current_page=current_page,
                          form=form,
                          current_date=datetime.now().date(),
-                         prazo_humano=prazo_humano)
+                         prazo_humano=prazo_humano,
+                         percentual_pendentes=percent_pending,
+                         percentual_andamento=percent_in_progress,
+                         percentual_concluidas=percent_completed,
+                         percentual_atrasadas=percent_overdue,
+                         percentual_nao_realizadas=percent_not_completed,
+                         total_properties_supervisor=total_properties_supervisor,
+                         translate_status=translate_status
+    )
 
 @main.route('/home', methods=['GET', 'POST'])
 @login_required
@@ -161,7 +207,7 @@ def home_post():
         else:
             a.status_color = 'secondary'
 
-    # Cálculo dos percentuais para usuário normal ou supervisor
+    # Cálculo dos percentuais para usuário normal, supervisor e admin
     percent_pending = percent_in_progress = percent_completed = percent_overdue = percent_not_completed = 0
     total_properties_supervisor = 0
     if current_user.role == 'user':
@@ -187,6 +233,15 @@ def home_post():
             percent_completed = round(len([a for a in activities_supervisor if a.status == 'completed']) / total_supervisor * 100)
             percent_overdue = round(len([a for a in activities_supervisor if a.status == 'overdue']) / total_supervisor * 100)
             percent_not_completed = round(len([a for a in activities_supervisor if a.status == 'not_completed']) / total_supervisor * 100)
+    elif current_user.role == 'admin':
+        activities_admin = Activity.query.all()
+        total_admin = len(activities_admin)
+        if total_admin > 0:
+            percent_pending = round(len([a for a in activities_admin if a.status == 'pending']) / total_admin * 100)
+            percent_in_progress = round(len([a for a in activities_admin if a.status == 'in_progress']) / total_admin * 100)
+            percent_completed = round(len([a for a in activities_admin if a.status == 'completed']) / total_admin * 100)
+            percent_overdue = round(len([a for a in activities_admin if a.status == 'overdue']) / total_admin * 100)
+            percent_not_completed = round(len([a for a in activities_admin if a.status == 'not_completed']) / total_admin * 100)
 
     return render_template('main/home.html',
                          activities=activities,
@@ -331,7 +386,7 @@ def desistir_atividade(atividade_id):
         )
         db.session.add(msg)
         db.session.commit()
-        flash('Atividade cancelada com sucesso.', 'warning')
+        flash('Atividade cancelada com sucesso.', 'success')
     return redirect(url_for('main.my_activities'))
 
 @main.route('/approvals')
@@ -341,18 +396,22 @@ def approvals():
         abort(403)
     
     if current_user.role == 'supervisor':
-        # Busca as propriedades onde o usuário é supervisor
-        properties_ids = [p.id for p in current_user.properties]
-        # Filtra atividades apenas das propriedades onde é supervisor
+        properties_ids = [p.id for p in current_user.properties_supervisionados]
         atividades = Activity.query.filter(
-            Activity.status == 'completed',
-            Activity.property_id.in_(properties_ids)
+            Activity.status == 'completed'
+        ).filter(
+            (Activity.property_id.in_(properties_ids)) | (Activity.created_by_id == current_user.id)
         ).order_by(Activity.created_at.desc()).all()
     else:  # admin
-        # Admin pode ver todas as atividades
         atividades = Activity.query.filter_by(status='completed').order_by(Activity.created_at.desc()).all()
     
-    return render_template('main/approvals.html', atividades=atividades, prazo_humano=prazo_humano, current_date=datetime.now().date())
+    return render_template(
+        'main/approvals.html',
+        atividades=atividades,
+        prazo_humano=prazo_humano,
+        current_date=datetime.now().date(),
+        translate_status=translate_status
+    )
 
 @main.route('/aprovar-atividade/<int:atividade_id>', methods=['POST'])
 @login_required
@@ -365,12 +424,12 @@ def aprovar_atividade(atividade_id):
         if atividade.created_by and atividade.created_by.role == 'supervisor':
             flash('Apenas administradores podem aprovar atividades de supervisores.', 'danger')
             return redirect(url_for('main.approvals'))
-        properties_ids = [p.id for p in current_user.properties]
+        properties_ids = [p.id for p in current_user.properties_supervisionados]
         if atividade.property_id not in properties_ids:
             flash('Você não tem permissão para aprovar atividades desta propriedade.', 'danger')
             return redirect(url_for('main.approvals'))
     if atividade.status == 'completed':
-        atividade.status = 'completed'
+        atividade.status = 'approved'
         atividade.approved_by_id = current_user.id
         db.session.commit()
         # Mensagem para o responsável
@@ -399,7 +458,7 @@ def recusar_atividade(atividade_id):
         if atividade.created_by and atividade.created_by.role == 'supervisor':
             flash('Apenas administradores podem recusar atividades de supervisores.', 'danger')
             return redirect(url_for('main.approvals'))
-        properties_ids = [p.id for p in current_user.properties]
+        properties_ids = [p.id for p in current_user.properties_supervisionados]
         if atividade.property_id not in properties_ids:
             flash('Você não tem permissão para recusar atividades desta propriedade.', 'danger')
             return redirect(url_for('main.approvals'))
@@ -429,7 +488,7 @@ def archive():
     data_lancamento_fim = request.args.get('data_lancamento_fim')
 
     if current_user.role == 'supervisor':
-        properties_ids = [p.id for p in current_user.properties]
+        properties_ids = [p.id for p in current_user.properties_supervisionados]
         atividades_query = Activity.query.filter(
             Activity.property_id.in_(properties_ids),
             Activity.status.in_(['completed', 'not_completed'])
@@ -493,10 +552,11 @@ def archive():
         title='Arquivo de Atividades',
         form=form,
         activities=atividades,
-        total_pages=total_pages,
-        current_page=page,
+        total_paginas=total_pages,
+        pagina_atual=page,
         prazo_humano=prazo_humano,
-        current_date=datetime.now().date()
+        current_date=datetime.now().date(),
+        translate_status=translate_status
     )
 
 @main.route('/updates')
@@ -520,7 +580,7 @@ def solicitar_correcao_atividade(atividade_id):
         if atividade.created_by and atividade.created_by.role == 'supervisor':
             flash('Apenas administradores podem solicitar correção de atividades de supervisores.', 'danger')
             return redirect(url_for('main.approvals'))
-        properties_ids = [p.id for p in current_user.properties]
+        properties_ids = [p.id for p in current_user.properties_supervisionados]
         if atividade.property_id not in properties_ids:
             flash('Você não tem permissão para solicitar correção desta atividade.', 'danger')
             return redirect(url_for('main.approvals'))
@@ -552,7 +612,7 @@ def solicitar_correcao_atividade(atividade_id):
 def supervisor_activities():
     if not hasattr(current_user, 'role') or current_user.role != 'supervisor':
         abort(403)
-    properties_ids = [p.id for p in current_user.properties]
+    properties_ids = [p.id for p in current_user.properties_supervisionados]
     filtro_property = request.args.get('property', type=int)
     filtro_status = request.args.get('status', type=str)
     page = request.args.get('page', 1, type=int)
@@ -588,7 +648,7 @@ def supervisor_activities():
             a.status_color = 'warning'
         else:
             a.status_color = 'secondary'
-    properties = current_user.properties
+    properties = current_user.properties_supervisionados
     return render_template(
         'main/supervisor_activities.html',
         title='Atividades dos Meus Condomínios',
@@ -720,7 +780,9 @@ def reports():
         ids_ativos = [p.id for p in properties_ativos]
         atividades_query = Activity.query.filter(Activity.property_id.in_(ids_ativos))
     else:
-        atividades_query = Activity.query.filter_by(created_by_id=current_user.id)
+        # Supervisor: mostrar apenas atividades dos condomínios supervisionados
+        properties_ids = [p.id for p in Property.query.filter_by(supervisor_id=current_user.id, is_active=True)]
+        atividades_query = Activity.query.filter(Activity.property_id.in_(properties_ids))
 
     # Aplica os filtros
     if filtro_property:
@@ -807,6 +869,11 @@ def reports():
                 'overdue': u['overdue'],
                 'completed': u['completed'],
                 'not_completed': u['not_completed'],
+                'pendentes': u['pending'],
+                'em_andamento': u['in_progress'],
+                'atrasadas': u['overdue'],
+                'concluidas': u['completed'],
+                'nao_realizadas': u['not_completed'],
                 'tarefas': u['tarefas']
             }
         supervisores_graficos = {}
@@ -818,6 +885,11 @@ def reports():
                 'overdue': u['overdue'],
                 'completed': u['completed'],
                 'not_completed': u['not_completed'],
+                'pendentes': u['pending'],
+                'em_andamento': u['in_progress'],
+                'atrasadas': u['overdue'],
+                'concluidas': u['completed'],
+                'nao_realizadas': u['not_completed'],
                 'tarefas': u['tarefas'],
                 'aguardando_aprovacao': u['aguardando_aprovacao']
             }
@@ -837,7 +909,8 @@ def reports():
             percent_in_progress=percent_in_progress,
             percent_completed=percent_completed,
             percent_overdue=percent_overdue,
-            percent_not_completed=percent_not_completed
+            percent_not_completed=percent_not_completed,
+            translate_status=translate_status
         )
     else:
         # Supervisor mantém lógica atual
@@ -871,7 +944,13 @@ def reports():
             'in_progress': u['in_progress'],
             'overdue': u['overdue'],
             'completed': u['completed'],
-            'not_completed': u['not_completed']
+            'not_completed': u['not_completed'],
+            'pendentes': u['pending'],
+            'em_andamento': u['in_progress'],
+            'atrasadas': u['overdue'],
+            'concluidas': u['completed'],
+            'nao_realizadas': u['not_completed'],
+            'tarefas': u['tarefas']
         }
     return render_template(
         'main/reports.html',
@@ -889,8 +968,9 @@ def reports():
         percent_in_progress=percent_in_progress,
         percent_completed=percent_completed,
         percent_overdue=percent_overdue,
-        percent_not_completed=percent_not_completed
-    ) 
+        percent_not_completed=percent_not_completed,
+        translate_status=translate_status
+    )
 
 @main.route('/atividades-admin')
 @login_required
