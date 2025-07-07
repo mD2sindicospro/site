@@ -21,3 +21,4 @@ whitenoise==6.6.0
 pandas==2.2.2
 fpdf==1.7.2
 xlsxwriter==3.1.9
+reportlab
