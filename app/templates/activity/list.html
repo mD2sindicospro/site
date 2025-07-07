@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% from 'utils/translations.html' import translate_status, get_status_class %}
 
+{% block title %}Atividades - Sistema de Gestão{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
     <div class="card shadow mb-4">
@@ -8,8 +10,52 @@
             <h6 class="m-0 font-weight-bold text-white" style="text-transform: uppercase;">ATIVIDADES</h6>
         </div>
     </div>
+    <div class="row mb-3 justify-content-center" id="filtros-atividades">
+        <div class="col-12 col-md-10 col-lg-8">
+            <form method="get" class="d-flex gap-2 align-items-end justify-content-center">
+                <div class="flex-fill">
+                    <label for="filtro_property" class="form-label mb-1">Condomínio</label>
+                    <select id="filtro_property" name="property" class="form-select">
+                        <option value="">Todos os Condomínios</option>
+                        {% for p in properties %}
+                            <option value="{{ p.id }}" {% if property_id == p.id %}selected{% endif %}>{{ p.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex-fill">
+                    <label for="filtro_responsavel" class="form-label mb-1">Responsável</label>
+                    <select id="filtro_responsavel" name="responsible" class="form-select">
+                        <option value="">Todos</option>
+                        {% for u in users %}
+                            <option value="{{ u.id }}" {% if responsible_id == u.id %}selected{% endif %}>{{ u.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex-fill">
+                    <label for="filtro_status" class="form-label mb-1">Status</label>
+                    <select id="filtro_status" name="status" class="form-select">
+                        <option value="">TODOS</option>
+                        <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>PENDENTE</option>
+                        <option value="in_progress" {% if status_filter == 'in_progress' %}selected{% endif %}>EM ANDAMENTO</option>
+                        <option value="correction" {% if status_filter == 'correction' %}selected{% endif %}>CORREÇÃO</option>
+                        <option value="overdue" {% if status_filter == 'overdue' %}selected{% endif %}>ATRASADA</option>
+                        <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>EM VERIFICAÇÃO</option>
+                        <option value="done" {% if status_filter == 'done' %}selected{% endif %}>REALIZADA</option>
+                        <option value="not_completed" {% if status_filter == 'not_completed' %}selected{% endif %}>NÃO REALIZADA</option>
+                        <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>CANCELADA</option>
+                    </select>
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-primary">Filtrar</button>
+                </div>
+                <div>
+                    <a href="{{ url_for('activity.list') }}" class="btn btn-secondary">Limpar Filtros</a>
+                </div>
+            </form>
+        </div>
+    </div>
     <div class="table-responsive">
-        <table class="table table-bordered text-center align-middle table-atividades" width="100%" cellspacing="0" style="font-size:0.85em;">
+        <table class="table table-bordered text-center align-middle table-atividades" width="100%" cellspacing="0">
             <thead>
                 <tr>
                     <th>Título</th>
@@ -33,9 +79,9 @@
                         <td>{{ activity.delivery_date.strftime('%d/%m/%Y') if activity.delivery_date else '—' }}</td>
                         <td>
                             <div class="btn-group">
-                                <a href="{{ url_for('activity.list') }}" class="btn btn-sm btn-info">
+                                <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#modalVisualizar{{ activity.id }}" title="Visualizar">
                                     <i class="fas fa-eye"></i>
-                                </a>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -48,6 +94,21 @@
             </tbody>
         </table>
     </div>
+    {% if total_paginas > 1 %}
+    <nav aria-label="Paginação de atividades">
+        <ul class="pagination justify-content-center mt-3">
+            <li class="page-item {% if pagina_atual == 1 %}disabled{% endif %}">
+                <a class="page-link" href="?page={{ pagina_atual - 1 }}" tabindex="-1">Anterior</a>
+            </li>
+            {% for pagina in range(1, total_paginas + 1) %}
+            <li class="page-item {% if pagina == pagina_atual %}active{% endif %}"><a class="page-link" href="?page={{ pagina }}">{{ pagina }}</a></li>
+            {% endfor %}
+            <li class="page-item {% if pagina_atual == total_paginas %}disabled{% endif %}">
+                <a class="page-link" href="?page={{ pagina_atual + 1 }}">Próxima</a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
 </div>
 
 {% for activity in activities %}
@@ -66,7 +127,12 @@
                         <select name="status" id="status" class="form-select">
                             <option value="pending" {% if activity.status == 'pending' %}selected{% endif %}>Pendente</option>
                             <option value="in_progress" {% if activity.status == 'in_progress' %}selected{% endif %}>Em Andamento</option>
-                            <option value="completed" {% if activity.status == 'completed' %}selected{% endif %}>Concluída</option>
+                            <option value="correction" {% if activity.status == 'correction' %}selected{% endif %}>Correção</option>
+                            <option value="overdue" {% if activity.status == 'overdue' %}selected{% endif %}>Atrasada</option>
+                            <option value="completed" {% if activity.status == 'completed' %}selected{% endif %}>Em Verificação</option>
+                            <option value="done" {% if activity.status == 'done' %}selected{% endif %}>Realizada</option>
+                            <option value="not_completed" {% if activity.status == 'not_completed' %}selected{% endif %}>Não Realizada</option>
+                            <option value="cancelled" {% if activity.status == 'cancelled' %}selected{% endif %}>Cancelada</option>
                         </select>
                     </div>
                     <div class="mb-3">
@@ -103,10 +169,89 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Visualizar Atividade -->
+<div class="modal fade" id="modalVisualizar{{ activity.id }}" tabindex="-1" aria-labelledby="modalVisualizarLabel{{ activity.id }}" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content shadow-lg rounded-4 border-0">
+      <div class="modal-header" style="background: #11141b; color: #fff; border-top-left-radius: 1rem; border-top-right-radius: 1rem;">
+        <h5 class="modal-title fw-bold" id="modalVisualizarLabel{{ activity.id }}">
+          <i class="fas fa-tasks me-2"></i>Detalhes da Atividade
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="row g-3">
+          <div class="col-12">
+            <div class="mb-2"><i class="fas fa-building me-1 text-secondary"></i> <strong>Condomínio:</strong></div>
+            <div>{{ activity.property.name if activity.property else '—' }}</div>
+          </div>
+          <div class="col-12 col-md-6">
+            <div class="mb-2"><i class="fas fa-tasks me-1 text-secondary"></i> <strong>Atividade:</strong></div>
+            <div>{{ activity.title }}</div>
+          </div>
+          <div class="col-12 col-md-6">
+            <div class="mb-2"><i class="fas fa-calendar-plus me-1 text-secondary"></i> <strong>Lançamento:</strong></div>
+            <div>{% if activity.created_at %}{{ activity.created_at.strftime('%d/%m/%y') }}{% else %}—{% endif %}</div>
+          </div>
+          <div class="col-12 col-md-6">
+            <div class="mb-2"><i class="fas fa-user me-1 text-secondary"></i> <strong>Responsável:</strong></div>
+            <div>{{ activity.responsible.name if activity.responsible else '—' }}</div>
+          </div>
+          <div class="col-12 col-md-6">
+            <div class="mb-2"><i class="fas fa-calendar-alt me-1 text-secondary"></i> <strong>Entregar em:</strong></div>
+            <div>{% if activity.delivery_date %}{{ activity.delivery_date.strftime('%d/%m/%y') }}{% else %}—{% endif %}</div>
+          </div>
+          <div class="col-12">
+            <div class="mb-2"><i class="fas fa-align-left me-1 text-secondary"></i> <strong>Descrição:</strong></div>
+            <div>{{ activity.description }}</div>
+          </div>
+          <div class="col-12 col-md-6">
+            <div class="mb-2"><i class="fas fa-flag me-1 text-secondary"></i> <strong>Status:</strong></div>
+            <div><span class="badge {{ get_status_class(activity.status) }}" style="font-size:1.1em;">{{ translate_status(activity.status).upper() }}</span></div>
+          </div>
+          {% if activity.cancellation_reason %}
+          <div class="col-12">
+            <div class="alert alert-warning mt-2 mb-0 fw-semibold" style="font-size:1.05em;">
+              <i class="fas fa-exclamation-triangle me-1"></i>
+              Motivo do cancelamento: {{ activity.cancellation_reason }}
+            </div>
+          </div>
+          {% endif %}
+          {% if activity.correction_reason %}
+          <div class="col-12">
+            <div class="alert alert-warning mt-2 mb-0 fw-semibold" style="font-size:1.05em;">
+              <i class="fas fa-exclamation-circle me-1"></i>
+              Correção Solicitada: {{ activity.correction_reason }}
+            </div>
+          </div>
+          {% endif %}
+          {% if activity.rejection_reason %}
+          <div class="col-12">
+            <div class="alert alert-danger mt-2 mb-0 fw-semibold" style="font-size:1.05em;">
+              <i class="fas fa-times-circle me-1"></i>
+              Motivo da recusa: {{ activity.rejection_reason }}
+            </div>
+          </div>
+          {% endif %}
+          {% if activity.approved_by %}
+          <div class="col-12 col-md-6">
+            <div class="mb-2"><i class="fas fa-user-check me-1 text-secondary"></i> <strong>Aprovado por:</strong></div>
+            <div>{{ activity.approved_by.username }}</div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="modal-footer bg-light rounded-bottom-4">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
 {% endfor %}
 
 <style>
-.table-atividades td, .table-atividades th { font-size: 0.80em !important; padding-top: 0.3em !important; padding-bottom: 0.3em !important; }
+.table-atividades td, .table-atividades th { padding-top: 0.3em !important; padding-bottom: 0.3em !important; }
 .table-atividades tr { min-height: 28px !important; height: 28px !important; }
 </style>
 {% endblock %}

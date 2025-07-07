@@ -34,9 +34,9 @@ def create_app(config_name='default'):
         try:
             from app.models.property import Property
             from app.models.user import User
-            form = NewActivityForm()
             if current_app and current_app.app_context():
                 properties = Property.query.filter_by(is_active=True).all()
+                form = NewActivityForm()
                 form.property.choices = [(p.id, p.name) for p in properties]
                 users = User.query.filter_by(is_active=True).all()
                 form.responsible.choices = [(u.id, u.name) for u in users]

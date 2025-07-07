@@ -79,5 +79,16 @@ def list():
             db.session.commit()
             flash('Condomínio cadastrado com sucesso!', 'success')
         return redirect(url_for('property.list'))
-    properties = Property.query.all()
-    return render_template('condominio/listar.html', properties=properties, supervisores=supervisores) 
+    # Paginação
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+    properties_query = Property.query.order_by(Property.number_of_apartments.desc())
+    total_properties = properties_query.count()
+    total_pages = (total_properties + per_page - 1) // per_page
+    properties = properties_query.offset((page - 1) * per_page).limit(per_page).all()
+    
+    return render_template('condominio/listar.html', 
+                          properties=properties, 
+                          supervisores=supervisores,
+                          total_pages=total_pages,
+                          current_page=page) 

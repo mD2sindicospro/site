@@ -14,19 +14,35 @@ activity = Blueprint('activity', __name__, url_prefix='/activity')
 @login_required
 def list():
     """List all activities for the user."""
+    if not (current_user.is_admin or current_user.is_supervisor):
+        flash('Você não tem permissão para acessar esta página.', 'danger')
+        return redirect(url_for('main.home'))
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+    property_id = request.args.get('property', type=int)
+    responsible_id = request.args.get('responsible', type=int)
+    status = request.args.get('status')
     if current_user.is_admin:
-        activities = Activity.query.all()
+        query = Activity.query
     elif current_user.is_supervisor:
-        activities = Activity.query.filter(
+        query = Activity.query.filter(
             (Activity.responsible_id == current_user.id) |
             (Activity.created_by_id == current_user.id)
-        ).all()
-    else:
-        activities = Activity.query.filter_by(responsible_id=current_user.id).all()
-    
+        )
+    if property_id:
+        query = query.filter(Activity.property_id == property_id)
+    if responsible_id:
+        query = query.filter(Activity.responsible_id == responsible_id)
+    if status:
+        query = query.filter(Activity.status == status)
+    # Filtro para não mostrar atividades canceladas, não realizadas ou realizadas
+    query = query.filter(~Activity.status.in_(['cancelled', 'not_completed', 'done']))
+    total_activities = query.count()
+    total_pages = (total_activities + per_page - 1) // per_page
+    activities = query.order_by(Activity.created_at.desc()).offset((page - 1) * per_page).limit(per_page).all()
     properties = Property.query.filter_by(is_active=True).all()
     users = User.query.filter_by(is_active=True).all()
-    return render_template('activity/list.html', activities=activities, properties=properties, users=users)
+    return render_template('activity/list.html', activities=activities, properties=properties, users=users, total_paginas=total_pages, pagina_atual=page, property_id=property_id, responsible_id=responsible_id, status_filter=status)
 
 @activity.route('/create', methods=['GET', 'POST'])
 @login_required
@@ -35,19 +51,19 @@ def create():
         flash('Você não tem permissão para criar atividades', 'danger')
         return redirect(url_for('main.home'))
 
-    form = NewActivityForm()
-    form.property.choices = [(p.id, p.name) for p in Property.query.filter_by(is_active=True).all()]
-    form.responsible.choices = [(u.id, u.name) for u in User.query.filter_by(is_active=True).all()]
+    new_activity_form = NewActivityForm()
+    new_activity_form.property.choices = [(p.id, p.name) for p in Property.query.filter_by(is_active=True).all()]
+    new_activity_form.responsible.choices = [(u.id, u.name) for u in User.query.filter_by(is_active=True).all()]
     
     if request.method == 'POST':
-        if form.validate_on_submit():
+        if new_activity_form.validate_on_submit():
             try:
                 activity = Activity(
-                    title=form.title.data,
-                    description=form.description.data,
-                    property_id=form.property.data,
-                    responsible_id=form.responsible.data,
-                    delivery_date=form.delivery_date.data,
+                    title=new_activity_form.title.data,
+                    description=new_activity_form.description.data,
+                    property_id=new_activity_form.property.data,
+                    responsible_id=new_activity_form.responsible.data,
+                    delivery_date=new_activity_form.delivery_date.data,
                     status='pending',
                     created_by_id=current_user.id
                 )
@@ -59,7 +75,7 @@ def create():
                 db.session.rollback()
                 flash(f'Erro ao criar atividade: {str(e)}', 'danger')
         else:
-            for field, errors in form.errors.items():
+            for field, errors in new_activity_form.errors.items():
                 for error in errors:
                     flash(f'Erro no campo {field}: {error}', 'danger')
     # Em qualquer outro caso, redireciona para a lista de atividades
@@ -78,7 +94,7 @@ def update(id):
         status = request.form.get('status')
         description = request.form.get('description')
         
-        if status and status not in ['pending', 'in_progress', 'completed']:
+        if status and status not in ['pending', 'in_progress', 'completed', 'correction', 'not_completed', 'overdue', 'done', 'cancelled']:
             raise ValueError('Status inválido')
             
         if status:
@@ -125,7 +141,7 @@ def complete(id):
     try:
         activity.status = 'completed'
         db.session.commit()
-        flash('Atividade concluída com sucesso', 'success')
+        flash('Atividade marcada como EM VERIFICAÇÃO!', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Erro ao concluir atividade: {str(e)}', 'danger')

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "utils/translations.html" import translate_status, get_status_class %}
 
-{% block title %}Atividades dos Meus Condomínios{% endblock %}
+{% block title %}Atividades dos Meus Condomínios - Sistema de Gestão{% endblock %}
 {% block content %}
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
@@ -53,12 +53,19 @@
 </div>
 
 <style>
-.badge-status-pending { background: #f1c40f !important; color: #fff; }
-.badge-status-in-progress { background: #3498db !important; color: #fff; }
-.badge-status-completed { background: #6ee7b7 !important; color: #222; }
-.badge-status-realizada, .badge-status-approved { background: #2ecc71 !important; color: #fff; }
-.badge-status-cancelled { background: #e74c3c !important; color: #fff; }
-.badge-status-correction { background: #f39c12 !important; color: #fff; }
+.badge-status-pending, .badge-status-in-progress, .badge-status-completed, .badge-status-correction, .badge-status-not_completed, .badge-status-overdue, .badge-status-done, .badge-status-cancelled {
+    padding: 0.25em 0.6em !important;
+    font-size: 0.85em !important;
+    border-radius: 6px;
+}
+.badge-status-pending { background: #7b8a97 !important; color: #fff; }
+.badge-status-in-progress { background: #ff9800 !important; color: #fff; }
+.badge-status-completed { background: #3498db !important; color: #fff; }
+.badge-status-correction { background: #ff9800 !important; color: #fff; }
+.badge-status-not_completed { background: #c0392b !important; color: #fff; }
+.badge-status-overdue { background: #e74c3c !important; color: #fff; }
+.badge-status-done { background: #218838 !important; color: #fff; }
+.badge-status-cancelled { background: #8b0000 !important; color: #fff; }
 .table-activities td, .table-activities th { font-size: 0.95rem; }
 </style>
 {% endblock %} 

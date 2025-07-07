@@ -5,15 +5,12 @@ Módulo de traduções para mapear textos internos (em inglês) para textos exib
 STATUS_TRANSLATIONS = {
     'pending': 'Pendente',
     'in_progress': 'Em Andamento',
-    'completed': 'Concluída',
-    'cancelled': 'Cancelada',
+    'completed': 'Em Verificação',
     'correction': 'Correção',
-    'approved': 'Realizada',
     'not_completed': 'Não Realizada',
     'overdue': 'Atrasada',
-    'finalizada': 'Finalizada',
-    'realizada': 'Realizada',
-    'correção': 'Correção',
+    'done': 'Realizada',
+    'cancelled': 'Cancelada',
 }
 
 def translate_status(status):
@@ -36,6 +33,8 @@ def get_status_class(status):
         status (str): Status interno em inglês
         
     Returns:
-        str: Nome da classe CSS
+        str: Classe CSS para o badge
     """
-    return f'badge-status-{status.replace(" ", "-").lower()}' 
+    if status == "in_progress":
+        return "badge-status-in-progress"
+    return f'badge-status-{status.lower().replace("_", "-")}' 

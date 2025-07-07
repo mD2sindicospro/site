@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Aprovações{% endblock %}
+{% block title %}Aprovações - Sistema de Gestão{% endblock %}
 {% block content %}
 <div class="container-fluid">
     <div class="card shadow mb-4">
@@ -30,7 +30,7 @@
                         <td>{{ activity.title }}</td>
                         <td>{% if activity.delivery_date %}{{ activity.delivery_date.strftime('%d/%m/%y') }}{% else %}—{% endif %}</td>
                         <td>
-                            <span class="badge badge-status-{{ activity.status.replace(' ', '-').lower() }}">
+                            <span class="badge {{ get_status_class(activity.status) }}">
                                 {{ translate_status(activity.status).upper() }}
                             </span>
                         </td>
@@ -79,7 +79,7 @@
                               </div>
                               <div class="col-12 col-md-6">
                                 <div class="mb-2"><i class="fas fa-flag me-1 text-secondary"></i> <strong>Status:</strong></div>
-                                <div><span class="badge badge-status-{{ activity.status.replace(' ', '-').lower() }}" style="font-size:1.1em;">{{ translate_status(activity.status).upper() }}</span></div>
+                                <div><span class="badge {{ get_status_class(activity.status) }}" style="font-size:1.1em;">{{ translate_status(activity.status).upper() }}</span></div>
                               </div>
                               {% if activity.cancellation_reason %}
                               <div class="col-12">
@@ -101,6 +101,14 @@
                               <div class="col-12 col-md-6">
                                 <div class="mb-2"><i class="fas fa-user-check me-1 text-secondary"></i> <strong>Aprovado por:</strong></div>
                                 <div>{{ activity.approved_by.username }}</div>
+                              </div>
+                              {% endif %}
+                              {% if activity.rejection_reason %}
+                              <div class="col-12">
+                                <div class="alert alert-danger mt-2 mb-0 fw-semibold" style="font-size:1.05em;">
+                                  <i class="fas fa-times-circle me-1"></i>
+                                  <strong>Motivo da Recusa:</strong> {{ activity.rejection_reason }}
+                                </div>
                               </div>
                               {% endif %}
                             </div>
@@ -162,15 +170,19 @@
                             <h5 class="modal-title" id="modalRecusarLabel{{ activity.id }}">Confirmar Rejeição</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                           </div>
-                          <div class="modal-body">
-                            Você tem certeza que deseja <strong class="text-danger">rejeitar</strong> esta atividade?
-                          </div>
-                          <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                            <form method="POST" action="{{ url_for('main.recusar_atividade', atividade_id=activity.id) }}" style="display:inline;">
+                          <form method="POST" action="{{ url_for('main.recusar_atividade', atividade_id=activity.id) }}" style="display:inline;">
+                            <div class="modal-body">
+                              <div class="mb-3">
+                                <label for="rejection_reason_{{ activity.id }}" class="form-label fw-semibold">Motivo da Recusa <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="rejection_reason_{{ activity.id }}" name="rejection_reason" rows="3" required placeholder="Descreva o motivo..."></textarea>
+                              </div>
+                              <div>Você tem certeza que deseja <strong class="text-danger">rejeitar</strong> esta atividade?</div>
+                            </div>
+                            <div class="modal-footer">
+                              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                               <button type="submit" class="btn btn-danger">Rejeitar</button>
-                            </form>
-                          </div>
+                            </div>
+                          </form>
                         </div>
                       </div>
                     </div>
@@ -185,19 +197,18 @@
     </div>
 </div>
 <style>
-.badge-status-pendente, .badge-status-em-andamento, .badge-status-ultimo-dia, .badge-status-atrasada, .badge-status-realizada, .badge-status-finalizada, .badge-status-não-realizada, .badge-status-completed, .badge-status-approved, .badge-status-correção {
+.badge-status-pending, .badge-status-in-progress, .badge-status-completed, .badge-status-correction, .badge-status-not_completed, .badge-status-overdue, .badge-status-done, .badge-status-cancelled {
     padding: 0.25em 0.6em !important;
     font-size: 0.85em !important;
     border-radius: 6px;
 }
-.badge-status-pendente { background: #7b8a97 !important; color: #fff; }
-.badge-status-em-andamento { background: #ff9800 !important; color: #fff; }
-.badge-status-ultimo-dia { background: #ff5252 !important; color: #fff; }
-.badge-status-atrasada { background: #c0392b !important; color: #fff; }
-.badge-status-realizada, .badge-status-approved { background: #2ecc71 !important; color: #fff; }
-.badge-status-finalizada { background: #2ecc71 !important; color: #fff; }
-.badge-status-não-realizada { background: #c0392b !important; color: #fff; }
-.badge-status-completed { background: #6ee7b7 !important; color: #222; }
-.badge-status-correção { background: #ff9800 !important; color: #fff; }
+.badge-status-pending { background: #7b8a97 !important; color: #fff; }
+.badge-status-in-progress { background: #ff9800 !important; color: #fff; }
+.badge-status-completed { background: #3498db !important; color: #fff; }
+.badge-status-correction { background: #ff9800 !important; color: #fff; }
+.badge-status-not_completed { background: #c0392b !important; color: #fff; }
+.badge-status-overdue { background: #e74c3c !important; color: #fff; }
+.badge-status-done { background: #218838 !important; color: #fff; }
+.badge-status-cancelled { background: #8b0000 !important; color: #fff; }
 </style>
 {% endblock %} 

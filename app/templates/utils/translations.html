@@ -4,23 +4,31 @@
     {% elif status == 'in_progress' %}
         Em Andamento
     {% elif status == 'completed' %}
-        Concluída
-    {% elif status == 'cancelled' %}
-        Cancelada
+        Em Verificação
     {% elif status == 'correction' %}
         Correção
+    {% elif status == 'not_completed' %}
+        Não Realizada
+    {% elif status == 'overdue' %}
+        Atrasada
+    {% elif status == 'done' %}
+        Realizada
+    {% elif status == 'cancelled' %}
+        Cancelada
     {% else %}
         {{ status }}
     {% endif %}
 {% endmacro %}
 
 {% macro get_status_class(status) %}
-    {%- if status == 'pending' %}badge-status-pendente
-    {%- elif status == 'in_progress' %}badge-status-em-andamento
-    {%- elif status == 'completed' %}badge-status-finalizada
-    {%- elif status == 'overdue' %}badge-status-atrasada
-    {%- elif status == 'not_completed' %}badge-status-não-realizada
-    {%- elif status == 'correction' %}badge-status-correção
-    {%- else %}badge-status-{{ status.replace(' ', '-').lower() }}
+    {%- if status == 'pending' %}badge-status-pending
+    {%- elif status == 'in_progress' %}badge-status-in-progress
+    {%- elif status == 'completed' %}badge-status-completed
+    {%- elif status == 'correction' %}badge-status-correction
+    {%- elif status == 'not_completed' %}badge-status-not_completed
+    {%- elif status == 'overdue' %}badge-status-overdue
+    {%- elif status == 'done' %}badge-status-done
+    {%- elif status == 'cancelled' %}badge-status-cancelled
+    {%- else %}badge-status-default
     {%- endif %}
 {% endmacro %} 

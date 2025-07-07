@@ -1,6 +1,8 @@
 {% extends 'base.html' %}
-{% block title %}Relatórios{% endblock %}
+{% block title %}Relatórios - Sistema de Gestão{% endblock %}
 {% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 <div class="container-fluid">
     <div class="row mb-3 justify-content-center">
         <div class="col-12 col-md-8 col-lg-10">
@@ -18,13 +20,15 @@
                     <div class="col-md-6">
                         <label for="filtro_status" class="form-label mb-1">Status</label>
                         <select id="filtro_status" name="status" class="form-select">
-                            <option value="">Todos</option>
-                            <option value="pending" {% if request.args.get('status') == 'pending' %}selected{% endif %}>Pendente</option>
-                            <option value="in progress" {% if request.args.get('status') == 'in progress' %}selected{% endif %}>Em Andamento</option>
-                            <option value="correction" {% if request.args.get('status') == 'correction' %}selected{% endif %}>Correção</option>
-                            <option value="delayed" {% if request.args.get('status') == 'delayed' %}selected{% endif %}>Atrasada</option>
-                            <option value="completed" {% if request.args.get('status') == 'completed' %}selected{% endif %}>Concluída</option>
-                            <option value="not completed" {% if request.args.get('status') == 'not completed' %}selected{% endif %}>Não Realizada</option>
+                            <option value="">TODOS</option>
+                            <option value="pending" {% if request.args.get('status') == 'pending' %}selected{% endif %}>PENDENTE</option>
+                            <option value="in_progress" {% if request.args.get('status') == 'in_progress' %}selected{% endif %}>EM ANDAMENTO</option>
+                            <option value="correction" {% if request.args.get('status') == 'correction' %}selected{% endif %}>CORREÇÃO</option>
+                            <option value="overdue" {% if request.args.get('status') == 'overdue' %}selected{% endif %}>ATRASADA</option>
+                            <option value="completed" {% if request.args.get('status') == 'completed' %}selected{% endif %}>EM VERIFICAÇÃO</option>
+                            <option value="done" {% if request.args.get('status') == 'done' %}selected{% endif %}>REALIZADA</option>
+                            <option value="not_completed" {% if request.args.get('status') == 'not_completed' %}selected{% endif %}>NÃO REALIZADA</option>
+                            <option value="cancelled" {% if request.args.get('status') == 'cancelled' %}selected{% endif %}>CANCELADA</option>
                         </select>
                     </div>
                 </div>
@@ -54,6 +58,7 @@
         <!-- AVISO REMOVIDO -->
     </div>
     <!-- Container dos gráficos de responsáveis -->
+    {% if responsaveis_graficos is defined %}
     <div class="card shadow mb-4">
         <div class="card-header bg-light text-dark text-center border-bottom" style="font-size:1.15em; font-weight:bold;">Análise por Responsável</div>
         <div class="card-body">
@@ -65,13 +70,14 @@
                     <canvas id="graficoResponsavelStatus" style="max-width: 260px; max-height: 260px;"></canvas>
                 </div>
                 <div class="col-12 col-md-4 d-flex flex-column align-items-center">
-                    <canvas id="graficoAtividadesConcluidas" style="max-width: 260px; max-height: 260px;"></canvas>
+                    <canvas id="graficoAtividadesAguardandoVerificacao" style="max-width: 260px; max-height: 260px;"></canvas>
                 </div>
             </div>
         </div>
     </div>
-    {% if responsaveis_graficos is defined and supervisores_graficos is defined %}
+    {% endif %}
     <!-- Container dos gráficos de supervisores -->
+    {% if supervisores_graficos is defined %}
     <div class="card shadow mb-4">
         <div class="card-header bg-light text-dark text-center border-bottom" style="font-size:1.15em; font-weight:bold;">Análise por Supervisor</div>
         <div class="card-body">
@@ -89,6 +95,74 @@
         </div>
     </div>
     {% endif %}
+    <!-- Gráfico de Produtividade Diária (apenas para usuário comum) -->
+    {% if produtividade_diaria is defined %}
+    <div class="card shadow mb-4">
+        <div class="card-header bg-light text-dark text-center border-bottom" style="font-size:1.15em; font-weight:bold;">Produtividade Diária</div>
+        <div class="card-body">
+            <div class="row justify-content-center">
+                <div class="col-12">
+                    <canvas id="graficoProdutividadeDiaria" style="max-width: 100%; min-height: 320px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+    const produtividadeDiaria = {{ produtividade_diaria|tojson }};
+    const diasProd = Object.keys(produtividadeDiaria);
+    const completedProd = diasProd.map(d => produtividadeDiaria[d]['completed']);
+    const doneProd = diasProd.map(d => produtividadeDiaria[d]['done']);
+    const ctxProd = document.getElementById('graficoProdutividadeDiaria').getContext('2d');
+    new Chart(ctxProd, {
+        type: 'bar',
+        data: {
+            labels: diasProd,
+            datasets: [
+                {
+                    label: 'Enviadas para Verificação',
+                    data: completedProd,
+                    borderColor: '#3498db',
+                    backgroundColor: 'rgba(52,152,219,0.7)',
+                    fill: true,
+                    borderWidth: 1
+                },
+                {
+                    label: 'Realizadas',
+                    data: doneProd,
+                    borderColor: '#218838',
+                    backgroundColor: 'rgba(33,136,56,0.7)',
+                    fill: true,
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'top' },
+                title: { display: false },
+                tooltip: { mode: 'index', intersect: false }
+            },
+            interaction: { mode: 'nearest', axis: 'x', intersect: false },
+            scales: {
+                x: {
+                    title: { display: true, text: 'Data' },
+                    ticks: {
+                        maxTicksLimit: 15,
+                        callback: function(value, index, values) {
+                            // Espera label no formato 'dd/mm/yyyy', retorna 'dd/mm'
+                            const label = this.getLabelForValue ? this.getLabelForValue(value) : diasProd[value] || '';
+                            return label ? label.substring(0, 5) : '';
+                        }
+                    },
+                    stacked: false
+                },
+                y: { title: { display: true, text: 'Quantidade' }, beginAtZero: true, precision: 0, stacked: false }
+            }
+        }
+    });
+    </script>
+    {% endif %}
     <!-- Tabela de atividades (sempre visível) -->
     <div class="table-responsive">
         <table class="table table-bordered text-center align-middle table-atividades" width="100%" cellspacing="0">
@@ -98,7 +172,7 @@
                     <th>Pendente</th>
                     <th>Em Andamento</th>
                     <th>Atrasada</th>
-                    <th>Concluída</th>
+                    <th>Em Verificação</th>
                     <th>Não Realizada</th>
                 </tr>
             </thead>
@@ -115,7 +189,7 @@
                         <td>{{ u.pendentes }}</td>
                         <td>{{ u.em_andamento }}</td>
                         <td>{{ u.atrasadas }}</td>
-                        <td>{{ u.concluidas }}</td>
+                        <td>{{ u.em_verificacao }}</td>
                         <td>{{ u.nao_realizadas }}</td>
                     </tr>
                     <tr>
@@ -143,7 +217,7 @@
                                                 <td>{{ t.atividade }}</td>
                                                 <td>{{ t.responsavel['username'] }}</td>
                                                 <td>{{ t.data_entrega }}</td>
-                                                <td><span class="badge badge-status-{{ t.status.replace(' ', '-').lower() }} align-middle" style="font-size:0.85em; padding:0.3em 0.7em;">{{ translate_status(t.status).upper() }}</span></td>
+                                                <td><span class="badge {{ get_status_class(t.status) }} align-middle" style="font-size:0.85em; padding:0.3em 0.7em;">{{ translate_status(t.status).upper() }}</span></td>
                                             </tr>
                                             {% endif %}
                                             {% endfor %}
@@ -171,7 +245,7 @@
                         <td>{{ u.pendentes }}</td>
                         <td>{{ u.em_andamento }}</td>
                         <td>{{ u.atrasadas }}</td>
-                        <td>{{ u.concluidas }}</td>
+                        <td>{{ u.em_verificacao }}</td>
                         <td>{{ u.nao_realizadas }}</td>
                     </tr>
                     <tr>
@@ -199,7 +273,7 @@
                                                 <td>{{ t.atividade }}</td>
                                                 <td>{{ t.responsavel['username'] }}</td>
                                                 <td>{{ t.data_entrega }}</td>
-                                                <td><span class="badge badge-status-{{ t.status.replace(' ', '-').lower() }} align-middle" style="font-size:0.85em; padding:0.3em 0.7em;">{{ translate_status(t.status).upper() }}</span></td>
+                                                <td><span class="badge {{ get_status_class(t.status) }} align-middle" style="font-size:0.85em; padding:0.3em 0.7em;">{{ translate_status(t.status).upper() }}</span></td>
                                             </tr>
                                             {% endif %}
                                             {% endfor %}
@@ -227,7 +301,7 @@
                         <td>{{ u.pendentes }}</td>
                         <td>{{ u.em_andamento }}</td>
                         <td>{{ u.atrasadas }}</td>
-                        <td>{{ u.concluidas }}</td>
+                        <td>{{ u.em_verificacao }}</td>
                         <td>{{ u.nao_realizadas }}</td>
                     </tr>
                     <tr>
@@ -255,7 +329,7 @@
                                                 <td>{{ t.atividade }}</td>
                                                 <td>{{ t.responsavel['username'] }}</td>
                                                 <td>{{ t.data_entrega }}</td>
-                                                <td><span class="badge badge-status-{{ t.status.replace(' ', '-').lower() }} align-middle" style="font-size:0.85em; padding:0.3em 0.7em;">{{ translate_status(t.status).upper() }}</span></td>
+                                                <td><span class="badge {{ get_status_class(t.status) }} align-middle" style="font-size:0.85em; padding:0.3em 0.7em;">{{ translate_status(t.status).upper() }}</span></td>
                                             </tr>
                                             {% endif %}
                                             {% endfor %}
@@ -277,18 +351,19 @@
     </div>
 </div>
 <style>
-.badge-status-pending, .badge-status-in-progress, .badge-status-last-day, .badge-status-delayed, .badge-status-completed, .badge-status-not-completed {
+.badge-status-pending, .badge-status-in-progress, .badge-status-completed, .badge-status-correction, .badge-status-not_completed, .badge-status-overdue, .badge-status-done, .badge-status-cancelled {
     padding: 0.25em 0.6em !important;
     font-size: 0.85em !important;
     border-radius: 6px;
 }
 .badge-status-pending { background: #7b8a97 !important; color: #fff; }
 .badge-status-in-progress { background: #ff9800 !important; color: #fff; }
-.badge-status-last-day { background: #ff5252 !important; color: #fff; }
-.badge-status-delayed { background: #c0392b !important; color: #fff; }
-.badge-status-completed { background: #6ee7b7 !important; color: #222; }
-.badge-status-not-completed { background: #c0392b !important; color: #fff; }
-.badge-status-realizada, .badge-status-approved { background: #2ecc71 !important; color: #fff; }
+.badge-status-completed { background: #3498db !important; color: #fff; }
+.badge-status-correction { background: #ff9800 !important; color: #fff; }
+.badge-status-not_completed { background: #c0392b !important; color: #fff; }
+.badge-status-overdue { background: #e74c3c !important; color: #fff; }
+.badge-status-done { background: #218838 !important; color: #fff; }
+.badge-status-cancelled { background: #8b0000 !important; color: #fff; }
 .table-atividades td, .table-atividades th { font-size: 0.95rem; }
 /* Ajuste para tabela expandida de tarefas */
 .table-atividades .shadow-sm table {
@@ -302,8 +377,6 @@
 }
 .transition { transition: transform 0.2s; }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 <script>
 function toggleTarefas(id) {
     var collapseDiv = document.getElementById('tarefas' + id);
@@ -325,58 +398,49 @@ document.querySelectorAll('.collapse').forEach(function(el) {
     });
 });
 
-// Dados reais vindos do backend
-{% if responsaveis_graficos is defined %}
-const responsaveis_graficos = {{ responsaveis_graficos|tojson }};
-{% else %}
-const responsaveis_graficos = {};
-{% endif %}
-{% if supervisores_graficos is defined %}
-const supervisores_graficos = {{ supervisores_graficos|tojson }};
-{% else %}
-const supervisores_graficos = {};
-{% endif %}
-const usuarios = Object.keys(responsaveis_graficos).length ? responsaveis_graficos : (typeof usuarios_graficos !== 'undefined' ? usuarios_graficos : {});
+// Debug: verifique no console se os dados estão corretos
+console.log('supervisores_graficos:', {{ supervisores_graficos|default({})|tojson }});
+console.log('supervisores_status_grafico:', {{ supervisores_status_grafico|default({})|tojson }});
 
-// Paleta variada para até 10 responsáveis
+const supervisores_graficos = {{ supervisores_graficos|default({})|tojson }};
+const supervisores_status_grafico = {{ supervisores_status_grafico|default({})|tojson }};
+
+// Paleta variada para até 10 supervisores
 const palette = [
     '#3b5bdb', '#e17055', '#00b894', '#fdcb6e', '#00bcd4', '#6c5ce7', '#fd79a8', '#636e72', '#fab1a0', '#0984e3'
 ];
 
-const responsaveis = Object.values(usuarios).map(u => u.usuario.username.split(' ')[0]);
-const responsavelData = Object.values(usuarios).map(u => u.pendentes + u.em_andamento + u.atrasadas + u.concluidas + u.nao_realizadas);
-
-// Gráfico 1: Distribuição de atividades por responsável
-const ctx1 = document.getElementById('graficoResponsavel').getContext('2d');
-new Chart(ctx1, {
+// GRÁFICOS DE RESPONSÁVEL
+if (document.getElementById('graficoResponsavel')) {
+    const responsaveis_graficos = {{ responsaveis_graficos|default({})|tojson }};
+    const nomesResponsaveis = Object.values(responsaveis_graficos).map(u => u.usuario.username.split(' ')[0]);
+    const dadosResponsaveis = Object.values(responsaveis_graficos).map(u => u.pendentes + u.em_andamento + u.atrasadas + u.concluidas + u.nao_realizadas);
+    const nomesResponsaveisSafe = nomesResponsaveis.length ? nomesResponsaveis : [''];
+    const dadosResponsaveisSafe = dadosResponsaveis.length ? dadosResponsaveis : [0];
+    const ctxResp1 = document.getElementById('graficoResponsavel').getContext('2d');
+    new Chart(ctxResp1, {
     type: 'doughnut',
     data: {
-        labels: responsaveis,
+            labels: nomesResponsaveisSafe,
         datasets: [{
-            data: responsavelData,
+                data: dadosResponsaveisSafe,
             backgroundColor: palette,
             borderWidth: 1
         }]
     },
     options: {
         plugins: {
-            legend: { 
-                position: 'right',
-                labels: { usePointStyle: true, pointStyle: 'rect' }
-            },
+                legend: { position: 'right', labels: { usePointStyle: true, pointStyle: 'rect' } },
             title: { display: true, text: 'Distribuição de Atividades por Responsável', font: { size: 18 } },
             datalabels: {
                 color: function(context) {
-                    // Pega a cor da fatia
                     const bgColor = context.dataset.backgroundColor[context.dataIndex];
-                    // Função para converter cor hex para luminância
                     function luminancia(hex) {
                         let c = hex.replace('#', '');
                         if (c.length === 3) c = c[0]+c[0]+c[1]+c[1]+c[2]+c[2];
                         const r = parseInt(c.substr(0,2),16);
                         const g = parseInt(c.substr(2,2),16);
                         const b = parseInt(c.substr(4,2),16);
-                        // Fórmula de luminância relativa
                         return 0.2126*r + 0.7152*g + 0.0722*b;
                     }
                     return luminancia(bgColor) < 140 ? '#fff' : '#222';
@@ -396,24 +460,29 @@ new Chart(ctx1, {
     plugins: [ChartDataLabels]
 });
 
-// Gráfico 2: Situação das Atividades por Responsável
-const pendentes = Object.values(usuarios).map(u => u.pendentes);
-const andamento = Object.values(usuarios).map(u => u.em_andamento);
-const atrasadas = Object.values(usuarios).map(u => u.atrasadas);
-const concluidas = Object.values(usuarios).map(u => u.concluidas);
-const nao_realizadas = Object.values(usuarios).map(u => u.nao_realizadas);
-const ctx2 = document.getElementById('graficoResponsavelStatus').getContext('2d');
-new Chart(ctx2, {
+    // Gráfico 2: Situação das Atividades por Responsável (barras empilhadas)
+    const statusLabels = ['PENDENTE', 'EM ANDAMENTO', 'ATRASADA', 'EM VERIFICAÇÃO', 'REALIZADA', 'NÃO REALIZADA'];
+    const statusKeys = ['pendentes', 'em_andamento', 'atrasadas', 'em_verificacao', 'concluidas', 'nao_realizadas'];
+    const statusColors = [
+        '#7b8a97',    // PENDENTE
+        '#ff9800',    // EM ANDAMENTO
+        '#ff5252',    // ATRASADA
+        '#3498db',    // EM VERIFICAÇÃO
+        '#006400',    // REALIZADA (verde escuro)
+        '#c0392b'     // NÃO REALIZADA
+    ];
+    const nomesResp2 = Object.values(responsaveis_graficos).map(u => u.usuario.username.split(' ')[0]);
+    const datasetsResp2 = statusKeys.map((key, idx) => ({
+        label: statusLabels[idx],
+        data: Object.values(responsaveis_graficos).map(u => u[key] || 0),
+        backgroundColor: statusColors[idx]
+    }));
+    const ctxResp2 = document.getElementById('graficoResponsavelStatus').getContext('2d');
+    new Chart(ctxResp2, {
     type: 'bar',
     data: {
-        labels: responsaveis,
-        datasets: [
-            { label: 'PENDENTE', data: pendentes, backgroundColor: '#7b8a97' },
-            { label: 'EM ANDAMENTO', data: andamento, backgroundColor: '#ff9800' },
-            { label: 'ATRASADA', data: atrasadas, backgroundColor: '#ff5252' },
-            { label: 'CONCLUÍDA', data: concluidas, backgroundColor: '#2ecc71' },
-            { label: 'NÃO REALIZADA', data: nao_realizadas, backgroundColor: '#c0392b' }
-        ]
+            labels: nomesResp2.length ? nomesResp2 : [''],
+            datasets: datasetsResp2
     },
     options: {
         plugins: {
@@ -431,38 +500,15 @@ new Chart(ctx2, {
     }
 });
 
-// Gráfico 3: Resumo Geral de Status das Atividades
-let pendentesTotal = 0, em_andamentoTotal = 0, totalAtrasadas = 0, concluidasTotal = 0, nao_realizadasTotal = 0;
-Object.values(usuarios).forEach(u => {
-    pendentesTotal += u.pendentes;
-    em_andamentoTotal += u.em_andamento;
-    totalAtrasadas += u.atrasadas;
-    concluidasTotal += u.concluidas;
-    nao_realizadasTotal += u.nao_realizadas;
-});
-// Dados, labels e cores
-let statusLabels = ['PENDENTE', 'EM ANDAMENTO', 'ATRASADA', 'CONCLUÍDA', 'NÃO REALIZADA'];
-let statusData = [pendentesTotal, em_andamentoTotal, totalAtrasadas, concluidasTotal, nao_realizadasTotal];
-let statusColors = [
-    '#7b8a97',    // PENDENTE
-    '#ff9800',    // EM ANDAMENTO
-    '#ff5252',    // ATRASADA (mais clara)
-    '#2ecc71',    // CONCLUÍDA
-    '#c0392b'     // NÃO REALIZADA
-];
-// Ordenar do maior para o menor
-let statusArray = statusLabels.map((label, i) => ({label, value: statusData[i], color: statusColors[i]}));
-statusArray.sort((a, b) => b.value - a.value);
-statusLabels = statusArray.map(e => e.label);
-statusData = statusArray.map(e => e.value);
-statusColors = statusArray.map(e => e.color);
-const ctx3 = document.getElementById('graficoAtividadesConcluidas').getContext('2d');
-new Chart(ctx3, {
+    // Gráfico 3: Resumo Geral de Status das Atividades dos Responsáveis (barra horizontal)
+    const statusDataResp = statusKeys.map(key => Object.values(responsaveis_graficos).reduce((acc, u) => acc + (u[key] || 0), 0));
+    const ctxResp3 = document.getElementById('graficoAtividadesAguardandoVerificacao').getContext('2d');
+    new Chart(ctxResp3, {
     type: 'bar',
     data: {
         labels: statusLabels,
         datasets: [{
-            data: statusData,
+                data: statusDataResp,
             backgroundColor: statusColors,
             borderWidth: 1
         }]
@@ -471,7 +517,7 @@ new Chart(ctx3, {
         indexAxis: 'y',
         plugins: {
             legend: { display: false },
-            title: { display: true, text: 'Resumo Geral de Status das Atividades', font: { size: 18 } },
+                title: { display: true, text: 'Resumo Geral de Status das Atividades dos Responsáveis', font: { size: 18 } },
             datalabels: {
                 anchor: 'center',
                 align: 'center',
@@ -503,20 +549,22 @@ new Chart(ctx3, {
     },
     plugins: [ChartDataLabels]
 });
+}
 
-// --- GRÁFICOS DE SUPERVISORES (apenas para admin) ---
-{% if responsaveis_graficos is defined and supervisores_graficos is defined %}
-const supervisores = supervisores_graficos;
-const nomesSupervisores = Object.values(supervisores).map(u => u.usuario.username.split(' ')[0]);
-const dadosSupervisores = Object.values(supervisores).map(u => u.pendentes + u.em_andamento + u.atrasadas + u.concluidas + u.nao_realizadas);
+// GRÁFICOS DE SUPERVISOR
+if (document.getElementById('graficoSupervisor')) {
 // Gráfico 1: Distribuição de atividades por supervisor
+    const nomesSupervisores2 = Object.values(supervisores_graficos).map(u => u.usuario.username.split(' ')[0]);
+    const dadosSupervisores2 = Object.values(supervisores_graficos).map(u => u.total || (u.pendentes + u.em_andamento + u.atrasadas + u.concluidas + u.nao_realizadas));
+    const nomesSupervisoresSafe2 = nomesSupervisores2.length ? nomesSupervisores2 : [''];
+    const dadosSupervisoresSafe2 = dadosSupervisores2.length ? dadosSupervisores2 : [0];
 const ctxSup1 = document.getElementById('graficoSupervisor').getContext('2d');
 new Chart(ctxSup1, {
     type: 'doughnut',
     data: {
-        labels: nomesSupervisores,
+            labels: nomesSupervisoresSafe2,
         datasets: [{
-            data: dadosSupervisores,
+                data: dadosSupervisoresSafe2,
             backgroundColor: palette,
             borderWidth: 1
         }]
@@ -552,24 +600,29 @@ new Chart(ctxSup1, {
     },
     plugins: [ChartDataLabels]
 });
-// Gráfico 2: Situação das Atividades por Supervisor
-const pendentesSup = Object.values(supervisores).map(u => u.pendentes);
-const andamentoSup = Object.values(supervisores).map(u => u.em_andamento);
-const atrasadasSup = Object.values(supervisores).map(u => u.atrasadas);
-const concluidasSup = Object.values(supervisores).map(u => u.concluidas);
-const naoRealizadasSup = Object.values(supervisores).map(u => u.nao_realizadas);
+
+    // Gráfico 2: Situação das Atividades por Supervisor (barras empilhadas)
+    const statusLabelsSup = ['PENDENTE', 'EM ANDAMENTO', 'ATRASADA', 'EM VERIFICAÇÃO', 'REALIZADA', 'NÃO REALIZADA'];
+    const statusKeysSup = ['pendentes', 'em_andamento', 'atrasadas', 'em_verificacao', 'concluidas', 'nao_realizadas'];
+    const statusColorsSup = [
+        '#7b8a97',    // PENDENTE
+        '#ff9800',    // EM ANDAMENTO
+        '#ff5252',    // ATRASADA
+        '#3498db',    // EM VERIFICAÇÃO
+        '#006400',    // REALIZADA (verde escuro)
+        '#c0392b'     // NÃO REALIZADA
+    ];
+    const datasetsSup2 = statusKeysSup.map((key, idx) => ({
+        label: statusLabelsSup[idx],
+        data: Object.values(supervisores_graficos).map(u => u[key] || 0),
+        backgroundColor: statusColorsSup[idx]
+    }));
 const ctxSup2 = document.getElementById('graficoSupervisorStatus').getContext('2d');
 new Chart(ctxSup2, {
     type: 'bar',
     data: {
-        labels: nomesSupervisores,
-        datasets: [
-            { label: 'PENDENTE', data: pendentesSup, backgroundColor: '#7b8a97' },
-            { label: 'EM ANDAMENTO', data: andamentoSup, backgroundColor: '#ff9800' },
-            { label: 'ATRASADA', data: atrasadasSup, backgroundColor: '#ff5252' },
-            { label: 'CONCLUÍDA', data: concluidasSup, backgroundColor: '#2ecc71' },
-            { label: 'NÃO REALIZADA', data: naoRealizadasSup, backgroundColor: '#c0392b' }
-        ]
+            labels: nomesSupervisoresSafe2,
+            datasets: datasetsSup2
     },
     options: {
         plugins: {
@@ -586,33 +639,70 @@ new Chart(ctxSup2, {
         }
     }
 });
-// Gráfico 3: Atividades aguardando aprovação por supervisor
-const waitingApproval = Object.values(supervisores).map(u => u.waiting_approval || 0);
+
+    // Gráfico 3: Resumo Geral de Status das Atividades dos Supervisores (percentual por status)
+    // Apenas status: EM VERIFICAÇÃO, REALIZADA, CANCELADA
+    const statusLabelsResumo = ['EM VERIFICAÇÃO', 'REALIZADA', 'CANCELADA'];
+    const statusKeysResumo = ['em_verificacao', 'concluidas', 'nao_realizadas'];
+    const statusColorsResumo = [
+        '#3498db',    // EM VERIFICAÇÃO
+        '#006400',    // REALIZADA
+        '#c0392b'     // CANCELADA (usando NAO REALIZADA)
+    ];
+    // Para cada supervisor, calcular o percentual de cada status
+    const supervisoresResumo = Object.values(supervisores_graficos);
+    const nomesSupervisoresResumo = supervisoresResumo.map(u => u.usuario.username.split(' ')[0]);
+    // Matriz: cada linha = status, cada coluna = supervisor
+    const percentuaisPorStatus = statusKeysResumo.map((key, idx) => {
+        return supervisoresResumo.map(u => {
+            const total = statusKeysResumo.reduce((acc, k) => acc + (u[k] || 0), 0);
+            const val = u[key] || 0;
+            return total > 0 ? (val / total * 100) : 0;
+        });
+    });
+    const datasetsResumo = statusLabelsResumo.map((label, idx) => ({
+        label: label,
+        data: percentuaisPorStatus[idx],
+        backgroundColor: statusColorsResumo[idx],
+        datalabels: {
+            anchor: 'center',
+            align: 'center',
+            color: '#fff',
+            font: { weight: 'bold', size: 12 },
+            formatter: (value) => value > 3 ? Math.round(value) + '%' : ''
+        }
+    }));
 const ctxSup3 = document.getElementById('supervisorApprovalChart').getContext('2d');
 new Chart(ctxSup3, {
     type: 'bar',
     data: {
-        labels: nomesSupervisores,
-        datasets: [{
-            label: 'Aguardando Aprovação',
-            data: waitingApproval,
-            backgroundColor: '#3b5bdb',
-            borderWidth: 1
-        }]
+            labels: nomesSupervisoresResumo,
+            datasets: datasetsResumo
     },
     options: {
+            indexAxis: 'y',
         plugins: {
             legend: { display: false },
-            title: { display: true, text: 'Atividades Aguardando Aprovação por Supervisor', font: { size: 18 } }
+                title: { display: true, text: 'Resumo Geral de Status das Atividades dos Supervisores (%)', font: { size: 18 } },
+                datalabels: {
+                    anchor: 'center',
+                    align: 'center',
+                    color: '#fff',
+                    font: { weight: 'bold', size: 12 },
+                    formatter: (value) => value > 3 ? Math.round(value) + '%' : ''
+                }
         },
         responsive: true,
         maintainAspectRatio: false,
+            barPercentage: 0.7,
+            categoryPercentage: 0.7,
         scales: {
-            x: { beginAtZero: true },
-            y: { beginAtZero: true, precision: 0 }
+                x: { beginAtZero: true, max: 100, ticks: { callback: (v) => v + '%' } },
+                y: { stacked: true }
         }
+        },
+        plugins: [ChartDataLabels]
+    });
     }
-});
-{% endif %}
 </script>
 {% endblock %} 

@@ -17,6 +17,7 @@ class Activity(db.Model):
     created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    rejection_reason = db.Column(db.Text)
 
     # Relationships
     property = db.relationship('Property', back_populates='activities')

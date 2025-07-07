@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Arquivo de Atividades{% endblock %}
+{% block title %}Arquivo de Atividades - Sistema de Gestão{% endblock %}
 
 {% block content %}
 {% set total_paginas = total_paginas|default(1) %}
@@ -8,8 +8,8 @@
     <div class="row mb-3 justify-content-center">
         <div class="col-12 col-md-8 col-lg-10">
             <form method="get">
-                <div class="row g-2 align-items-end mb-2">
-                    <div class="col-md-6">
+                <div class="row g-2 align-items-end mb-2 justify-content-center">
+                    <div class="col-12 col-md-3 col-lg-3">
                         <label for="filtro_property" class="form-label mb-1">Condomínio</label>
                         <select id="filtro_property" name="property" class="form-select">
                             <option value="">Todos os Condomínios</option>
@@ -18,28 +18,30 @@
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-12 col-md-2 col-lg-2">
                         <label for="filtro_status" class="form-label mb-1">Status</label>
                         <select id="filtro_status" name="status" class="form-select">
-                            <option value="">Todos</option>
-                            <option value="finalizada" {% if request.args.get('status') == 'finalizada' %}selected{% endif %}>Finalizada</option>
-                            <option value="não realizada" {% if request.args.get('status') == 'não realizada' %}selected{% endif %}>Não Realizada</option>
+                            <option value="">TODOS</option>
+                            <option value="done" {% if request.args.get('status') == 'done' %}selected{% endif %}>REALIZADA</option>
+                            <option value="not_completed" {% if request.args.get('status') == 'not_completed' %}selected{% endif %}>NÃO REALIZADA</option>
+                            <option value="cancelled" {% if request.args.get('status') == 'cancelled' %}selected{% endif %}>CANCELADA</option>
                         </select>
                     </div>
-                </div>
-                <div class="row g-2 align-items-end">
-                    <div class="col-md-3">
+                    <div class="col-6 col-md-2 col-lg-2">
                         <label for="data_lancamento_inicio" class="form-label mb-1">Lançamento de</label>
                         <input type="text" id="data_lancamento_inicio" name="data_lancamento_inicio" class="form-control datepicker-br" placeholder="dd/mm/aaaa" value="{{ request.args.get('data_lancamento_inicio', '') }}">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-6 col-md-2 col-lg-2">
                         <label for="data_lancamento_fim" class="form-label mb-1">Até</label>
                         <input type="text" id="data_lancamento_fim" name="data_lancamento_fim" class="form-control datepicker-br" placeholder="dd/mm/aaaa" value="{{ request.args.get('data_lancamento_fim', '') }}">
                     </div>
-                    <div class="col-md-6 d-flex justify-content-end gap-2 align-items-end">
+                </div>
+                <div class="row mb-3 justify-content-center">
+                    <div class="col-12 d-flex flex-wrap justify-content-center gap-2">
                         <a href="{{ url_for('main.archive') }}" class="btn btn-secondary">Limpar Filtros</a>
                         <button type="submit" class="btn btn-primary">Filtrar</button>
                         <a href="{{ url_for('main.exportar_excel', property=request.args.get('property'), status=request.args.get('status'), data_lancamento_inicio=request.args.get('data_lancamento_inicio'), data_lancamento_fim=request.args.get('data_lancamento_fim')) }}" class="btn btn-success"><i class="fas fa-file-excel me-1"></i> Exportar Excel</a>
+                        <a href="#" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalExportarPDF"><i class="fas fa-file-pdf me-1"></i> Exportar PDF</a>
                     </div>
                 </div>
             </form>
@@ -60,8 +62,7 @@
                             <th>Lançamento</th>
                             <th>Responsável</th>
                             <th>Atividade</th>
-                            <th>Entregar em</th>
-                            <th>Concluída em</th>
+                            <th>Entregue em</th>
                             <th>Status</th>
                             <th>Ações</th>
                         </tr>
@@ -74,16 +75,15 @@
                                 <td>{% if activity.created_at %}{{ activity.created_at.strftime('%d/%m/%y') }}{% else %}—{% endif %}</td>
                                 <td>{{ activity.responsible.name if activity.responsible else '—' }}</td>
                                 <td>{{ activity.title }}</td>
-                                <td>{% if activity.delivery_date %}{{ activity.delivery_date.strftime('%d/%m/%y') }}{% else %}—{% endif %}</td>
                                 <td>
-                                    {% if activity.status == 'finalizada' and activity.data_conclusao %}
-                                        {{ activity.data_conclusao.strftime('%d/%m/%y') }}
+                                    {% if activity.status == 'done' and activity.delivery_date %}
+                                        {{ activity.delivery_date.strftime('%d/%m/%y') }}
                                     {% else %}
                                         —
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <span class="badge badge-status-{{ activity.status.replace(' ', '-').lower() }}">{{ translate_status(activity.status).upper() }}</span>
+                                    <span class="badge {{ get_status_class(activity.status) }}">{{ translate_status(activity.status).upper() }}</span>
                                 </td>
                                 <td>
                                     <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#modalVisualizar{{ activity.id }}" title="Visualizar"><i class="fas fa-eye"></i></button>
@@ -127,7 +127,7 @@
                                       </div>
                                       <div class="col-12 col-md-6">
                                         <div class="mb-2"><i class="fas fa-flag me-1 text-secondary"></i> <strong>Status:</strong></div>
-                                        <div><span class="badge badge-status-{{ activity.status.replace(' ', '-').lower() }}" style="font-size:1.1em;">{{ translate_status(activity.status).upper() }}</span></div>
+                                        <div><span class="badge {{ get_status_class(activity.status) }}" style="font-size:1.1em;">{{ translate_status(activity.status).upper() }}</span></div>
                                       </div>
                                       {% if activity.cancellation_reason %}
                                       <div class="col-12">
@@ -179,34 +179,146 @@
     </div>
 </div>
 <style>
-.badge-status-pendente, .badge-status-em-andamento, .badge-status-ultimo-dia, .badge-status-atrasada, .badge-status-realizada, .badge-status-finalizada, .badge-status-não-realizada {
+.badge-status-pending, .badge-status-in-progress, .badge-status-completed, .badge-status-correction, .badge-status-not_completed, .badge-status-overdue, .badge-status-done, .badge-status-cancelled {
     padding: 0.25em 0.6em !important;
     font-size: 0.85em !important;
     border-radius: 6px;
 }
-.badge-status-pendente { background: #7b8a97 !important; color: #fff; }
-.badge-status-em-andamento { background: #ff9800 !important; color: #fff; }
-.badge-status-ultimo-dia { background: #ff5252 !important; color: #fff; }
-.badge-status-atrasada { background: #c0392b !important; color: #fff; }
-.badge-status-realizada { background: #6ee7b7 !important; color: #222; }
-.badge-status-finalizada { background: #2ecc71 !important; color: #fff; }
-.badge-status-não-realizada { background: #c0392b !important; color: #fff; }
-.badge-status-completed { background: #6ee7b7 !important; color: #222; }
-.badge-status-realizada, .badge-status-approved { background: #2ecc71 !important; color: #fff; }
-.table-atividades td, .table-atividades th { font-size: 0.95rem; }
+.badge-status-pending { background: #7b8a97 !important; color: #fff; }
+.badge-status-in-progress { background: #ff9800 !important; color: #fff; }
+.badge-status-completed { background: #3498db !important; color: #fff; }
+.badge-status-correction { background: #ff9800 !important; color: #fff; }
+.badge-status-not_completed { background: #c0392b !important; color: #fff; }
+.badge-status-overdue { background: #e74c3c !important; color: #fff; }
+.badge-status-done { background: #218838 !important; color: #fff; }
+.badge-status-cancelled { background: #8b0000 !important; color: #fff; }
+.table-atividades td, .table-atividades th {
+    font-size: 0.95rem;
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+}
+.table-atividades tbody tr {
+    height: 38px;
+}
+.btn { min-height: 44px; }
+@media (max-width: 768px) {
+  .col-md-6.d-flex.align-items-center {
+    justify-content: center !important;
+  }
+}
+@media (max-width: 991.98px) {
+  .row.g-2.align-items-end.mb-2 > [class^='col-'] {
+    margin-bottom: 0.5rem;
+  }
+  .row.mb-3 > .d-flex {
+    justify-content: center !important;
+  }
+}
+@media (max-width: 575.98px) {
+  .row.g-2.align-items-end.mb-2 > [class^='col-'] {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+  .row.mb-3 > .d-flex {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center !important;
+  }
+  .row.g-2.align-items-end.mb-2 .btn,
+  .row.mb-3 .btn {
+    width: 100%;
+    min-width: 0;
+  }
+}
 </style>
+<!-- SCRIPTS DE DATA -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/css/bootstrap-datepicker3.min.css">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/js/bootstrap-datepicker.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/locales/bootstrap-datepicker.pt-BR.min.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-datepicker@1.10.0/dist/css/bootstrap-datepicker3.min.css">
 <script>
-  $(function() {
-    $('.datepicker-br').datepicker({
-      format: 'dd/mm/yyyy',
-      language: 'pt-BR',
-      autoclose: true,
-      todayHighlight: true
+$(function() {
+  // Inicialização global para todos os campos .datepicker-br ao focar
+  $(document).on('focus', '.datepicker-br', function() {
+    if (!$(this).data('datepicker')) {
+      $(this).datepicker({
+        format: 'dd/mm/yyyy',
+        language: 'pt-BR',
+        autoclose: true,
+        todayHighlight: true
+      });
+      $(this).datepicker('show');
+    }
+  });
+  // Inicializar datepicker ao abrir o modal PDF
+  $('#modalExportarPDF').on('shown.bs.modal', function () {
+    $('#pdf_data_inicio, #pdf_data_fim').each(function() {
+      $(this).datepicker('destroy');
+      $(this).datepicker({
+        format: 'dd/mm/yyyy',
+        language: 'pt-BR',
+        autoclose: true,
+        todayHighlight: true
+      });
     });
   });
+});
 </script>
+<!-- Modal Exportar PDF -->
+<div class="modal fade" id="modalExportarPDF" tabindex="-1" aria-labelledby="modalExportarPDFLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content shadow-lg rounded-4 border-0">
+      <div class="modal-header" style="background: #11141b; color: #fff; border-top-left-radius: 1rem; border-top-right-radius: 1rem;">
+        <h5 class="modal-title fw-bold" id="modalExportarPDFLabel">
+          <i class="fas fa-file-pdf me-2"></i>Exportar Relatório de Atividades (PDF)
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <form id="formExportarPDF" method="get" action="{{ url_for('main.exportar_pdf') }}" target="_blank">
+        <div class="modal-body p-4">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="pdf_property" class="form-label">Condomínio</label>
+              <select id="pdf_property" name="property" class="form-select">
+                <option value="">Todos os Condomínios</option>
+                {% for p in form.property.choices %}
+                  <option value="{{ p[0] }}">{{ p[1] }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label for="pdf_data_inicio" class="form-label">Lançamento de</label>
+              <input type="text" id="pdf_data_inicio" name="data_lancamento_inicio" class="form-control datepicker-br" placeholder="dd/mm/aaaa">
+            </div>
+            <div class="col-md-3">
+              <label for="pdf_data_fim" class="form-label">Até</label>
+              <input type="text" id="pdf_data_fim" name="data_lancamento_fim" class="form-control datepicker-br" placeholder="dd/mm/aaaa">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Status das Atividades</label>
+              <div id="pdf_status_group" class="d-flex gap-3 flex-wrap justify-content-center">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="status" id="status_done" value="done">
+                  <label class="form-check-label" for="status_done">REALIZADA</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="status" id="status_not_completed" value="not_completed">
+                  <label class="form-check-label" for="status_not_completed">NÃO REALIZADA</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="status" id="status_cancelled" value="cancelled">
+                  <label class="form-check-label" for="status_cancelled">CANCELADA</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer bg-light rounded-bottom-4">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-file-pdf me-1"></i> Gerar PDF</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 {% endblock %} 
