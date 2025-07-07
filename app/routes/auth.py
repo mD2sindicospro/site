@@ -14,14 +14,15 @@ def login():
     
     if request.method == 'POST' and form.validate_on_submit():
         email = form.email.data
+        password = form.password.data
         user = User.query.filter_by(email=email).first()
         
-        if user and user.is_active:
+        if user and user.is_active and user.check_password(password):
             login_user(user, remember=form.remember.data)
             flash('Bem-vindo!', 'success')
             return redirect(url_for('main.home'))
         else:
-            flash('Email não encontrado ou usuário inativo', 'danger')
+            flash('Email ou senha inválidos', 'danger')
             
     return render_template('auth/login.html', form=form)
 

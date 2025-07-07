@@ -2,7 +2,6 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from app.models.user import User
 from app.extensions import db
-from app.extensions import bcrypt
 import flask
 
 admin = Blueprint('admin', __name__, url_prefix='/admin')
@@ -35,9 +34,10 @@ def manage_users():
         if User.query.filter_by(email=email).first():
             flash('Email já cadastrado', 'danger')
             return redirect(url_for('admin.manage_users'))
-        password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
+        
+        # Criar usuário usando o método correto do modelo
         user = User(name=name, email=email, role=role)
-        user.set_password(password)
+        user.set_password(password)  # Usa o método scrypt do modelo
         user.is_active = is_active
         db.session.add(user)
         db.session.commit()
@@ -58,7 +58,7 @@ def manage_users():
             user.is_active = request.form.get('edit_is_active') == '1'
             new_password = request.form.get('edit_password')
             if new_password:
-                user.password_hash = bcrypt.generate_password_hash(new_password).decode('utf-8')
+                user.set_password(new_password)  # Usa o método scrypt do modelo
             db.session.commit()
             flash('Usuário atualizado com sucesso!', 'success')
         else:
@@ -117,7 +117,7 @@ def create_user():
             return redirect(url_for('admin.create_user'))
         
         user = User(name=name, email=email, role=role)
-        user.set_password(password)
+        user.set_password(password)  # Usa o método scrypt do modelo
         user.is_active = is_active
         
         db.session.add(user)

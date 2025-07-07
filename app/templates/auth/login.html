@@ -22,6 +22,15 @@
                                 {% endfor %}
                             {% endif %}
                         </div>
+                        <div class="mb-3">
+                            {{ form.password.label(class="form-label") }}
+                            {{ form.password(class="form-control") }}
+                            {% if form.password.errors %}
+                                {% for error in form.password.errors %}
+                                    <span class="text-danger">{{ error }}</span>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
                         <div class="mb-3 form-check">
                             {{ form.remember(class="form-check-input") }}
                             {{ form.remember.label(class="form-check-label") }}
