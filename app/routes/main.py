@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, send_file, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, send_file, current_app, jsonify
 from flask_login import login_required, current_user
 from app.forms.activity import NewActivityForm
 from app.models.property import Property
@@ -23,8 +23,90 @@ from reportlab.lib.styles import getSampleStyleSheet
 from unidecode import unidecode
 from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.styles import ParagraphStyle
+import os
+import psutil
 
 main = Blueprint('main', __name__)
+
+# Health check routes - SEM AUTENTICAÇÃO
+@main.route('/health')
+def health_check():
+    """
+    Rota simples para health check do Render.
+    Retorna status básico da aplicação sem verificar banco de dados.
+    """
+    try:
+        return jsonify({
+            'status': 'healthy',
+            'timestamp': datetime.now().isoformat(),
+            'service': 'site-m2d',
+            'version': '1.0.0'
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+@main.route('/health-db')
+def health_check_db():
+    """
+    Rota para verificar conexão com banco de dados.
+    Usada para monitoramento mais detalhado.
+    """
+    try:
+        # Teste simples de conexão com banco
+        db.session.execute('SELECT 1')
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'healthy',
+            'database': 'connected',
+            'timestamp': datetime.now().isoformat()
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'database_error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+@main.route('/health-detailed')
+def health_check_detailed():
+    """
+    Rota para health check detalhado com métricas do sistema.
+    """
+    try:
+        # Informações básicas do sistema
+        memory = psutil.virtual_memory()
+        disk = psutil.disk_usage('/')
+        
+        # Teste de banco de dados
+        db_status = 'connected'
+        try:
+            db.session.execute('SELECT 1')
+            db.session.commit()
+        except Exception as e:
+            db_status = f'error: {str(e)}'
+        
+        return jsonify({
+            'status': 'healthy',
+            'timestamp': datetime.now().isoformat(),
+            'system': {
+                'memory_percent': memory.percent,
+                'disk_percent': disk.percent,
+                'cpu_percent': psutil.cpu_percent(interval=1)
+            },
+            'database': db_status,
+            'environment': os.getenv('FLASK_ENV', 'development')
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
 
 def prazo_humano(data_inicio, data_fim):
     if not data_inicio or not data_fim:
