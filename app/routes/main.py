@@ -30,6 +30,8 @@ main = Blueprint('main', __name__)
 
 @main.route('/')
 def landing():
+    if current_user.is_authenticated:
+        return redirect(url_for('main.home'))
     return render_template('main/landing.html')
 
 # Health check routes - SEM AUTENTICAÇÃO
