@@ -24,7 +24,7 @@ from unidecode import unidecode
 from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.styles import ParagraphStyle
 import os
-import psutil
+# import psutil  # Temporarily disabled
 
 main = Blueprint('main', __name__)
 
@@ -75,13 +75,9 @@ def health_check_db():
 @main.route('/health-detailed')
 def health_check_detailed():
     """
-    Rota para health check detalhado com métricas do sistema.
+    Rota para health check detalhado (versão simplificada).
     """
     try:
-        # Informações básicas do sistema
-        memory = psutil.virtual_memory()
-        disk = psutil.disk_usage('/')
-        
         # Teste de banco de dados
         db_status = 'connected'
         try:
@@ -93,13 +89,9 @@ def health_check_detailed():
         return jsonify({
             'status': 'healthy',
             'timestamp': datetime.now().isoformat(),
-            'system': {
-                'memory_percent': memory.percent,
-                'disk_percent': disk.percent,
-                'cpu_percent': psutil.cpu_percent(interval=1)
-            },
             'database': db_status,
-            'environment': os.getenv('FLASK_ENV', 'development')
+            'environment': os.getenv('FLASK_ENV', 'development'),
+            'note': 'psutil temporarily disabled'
         }), 200
     except Exception as e:
         return jsonify({

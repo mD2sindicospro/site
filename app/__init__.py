@@ -95,7 +95,13 @@ def create_app(config_name='default'):
     @app.errorhandler(500)
     def internal_error(error):
         app.logger.error(f"500 error: {error}")
-        db.session.rollback()
+        try:
+            # Tentar fazer rollback apenas se houver sessão ativa
+            if hasattr(db, 'session') and db.session.is_active:
+                db.session.rollback()
+        except Exception as rollback_error:
+            app.logger.error(f"Erro ao fazer rollback: {rollback_error}")
+        
         return render_template('errors/500.html'), 500
 
     return app 
