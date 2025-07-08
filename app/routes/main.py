@@ -142,7 +142,7 @@ def serialize_activity(activity):
         'cancellation_reason': getattr(activity, 'cancellation_reason', None),
     }
 
-@main.route('/')
+@main.route('/home')
 @login_required
 def home():
     # Get current page from query string
