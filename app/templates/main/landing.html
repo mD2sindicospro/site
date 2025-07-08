@@ -2,12 +2,21 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Bem-vindo ao Sistema</title>
+    <title>Entrar no Sistema</title>
     <style>
         body { font-family: Arial, sans-serif; background: #f7f7f7; text-align: center; padding-top: 10vh; }
-        .container { background: #fff; display: inline-block; padding: 40px 60px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        h1 { color: #2c3e50; }
-        p { color: #555; margin-bottom: 30px; }
+        .login-container {
+            background: #fff;
+            display: inline-block;
+            padding: 40px 60px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            min-width: 340px;
+        }
+        .logo {
+            width: 120px;
+            margin-bottom: 30px;
+        }
         .btn {
             background: #007bff;
             color: #fff;
@@ -22,9 +31,9 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Bem-vindo ao Sistema de Gestão de Atividades</h1>
-        <p>Gerencie suas atividades de condomínio de forma simples e eficiente.<br>Para acessar, clique no botão abaixo:</p>
+    <div class="login-container">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="logo">
+        <br>
         <a href="{{ url_for('auth.login') }}"><button class="btn">Entrar</button></a>
     </div>
 </body>
