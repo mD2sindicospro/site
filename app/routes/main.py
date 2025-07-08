@@ -28,6 +28,10 @@ import os
 
 main = Blueprint('main', __name__)
 
+@main.route('/')
+def landing():
+    return render_template('main/landing.html')
+
 # Health check routes - SEM AUTENTICAÇÃO
 @main.route('/health')
 def health_check():
