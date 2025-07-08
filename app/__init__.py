@@ -8,6 +8,8 @@ import logging
 from datetime import datetime
 from flask import render_template
 from app.extensions import db
+import hashlib
+import hmac
 
 def create_app(config_name='default'):
     app = Flask(__name__, static_folder='static')
