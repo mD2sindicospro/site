@@ -26,6 +26,7 @@ services:
       - key: GUNICORN_CMD_ARGS
         value: "--log-level=info --access-logfile=- --error-logfile=-"
     healthCheckPath: /health
+    healthCheckTimeout: 10
     autoDeploy: true
     buildFilter:
       paths:
