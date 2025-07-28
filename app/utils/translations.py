@@ -37,4 +37,4 @@ def get_status_class(status):
     """
     if status == "in_progress":
         return "badge-status-in-progress"
-    return f'badge-status-{status.lower().replace("_", "-")}' 
+    return f'badge-status-{status.lower()}' 

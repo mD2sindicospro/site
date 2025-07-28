@@ -4,6 +4,36 @@
 
 {% block content %}
 {% set total_paginas = total_paginas|default(1) %}
+<style>
+/* Tabela mais compacta */
+.table-atividades td {
+    padding: 0.25rem 0.5rem;
+    vertical-align: middle;
+}
+
+.table-atividades th {
+    padding: 0.5rem 0.5rem;
+    vertical-align: middle;
+}
+
+/* Botão de ação mais compacto */
+.btn-sm.py-0 {
+    line-height: 1;
+    font-size: 0.8rem;
+    min-height: auto;
+    height: auto;
+}
+
+/* Fonte menor para tabela mais compacta */
+.table-atividades {
+    font-size: 0.9rem;
+}
+
+.table-atividades th {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+</style>
 <div class="container-fluid">
     <div class="row mb-3 justify-content-center">
         <div class="col-12 col-md-8 col-lg-10">
@@ -37,11 +67,13 @@
                     </div>
                 </div>
                 <div class="row mb-3 justify-content-center">
-                    <div class="col-12 d-flex flex-wrap justify-content-center gap-2">
-                        <a href="{{ url_for('main.archive') }}" class="btn btn-secondary">Limpar Filtros</a>
-                        <button type="submit" class="btn btn-primary">Filtrar</button>
-                        <a href="{{ url_for('main.exportar_excel', property=request.args.get('property'), status=request.args.get('status'), data_lancamento_inicio=request.args.get('data_lancamento_inicio'), data_lancamento_fim=request.args.get('data_lancamento_fim')) }}" class="btn btn-success"><i class="fas fa-file-excel me-1"></i> Exportar Excel</a>
-                        <a href="#" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalExportarPDF"><i class="fas fa-file-pdf me-1"></i> Exportar PDF</a>
+                    <div class="col-12">
+                        <div class="d-flex flex-wrap justify-content-center gap-2 archive-buttons">
+                            <a href="{{ url_for('main.archive') }}" class="btn btn-secondary">Limpar Filtros</a>
+                            <button type="submit" class="btn btn-primary">Filtrar</button>
+                            <a href="{{ url_for('main.exportar_excel', property=request.args.get('property'), status=request.args.get('status'), data_lancamento_inicio=request.args.get('data_lancamento_inicio'), data_lancamento_fim=request.args.get('data_lancamento_fim')) }}" class="btn btn-success"><i class="fas fa-file-excel me-1"></i> Exportar Excel</a>
+                            <a href="#" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalExportarPDF"><i class="fas fa-file-pdf me-1"></i> Exportar PDF</a>
+                        </div>
                     </div>
                 </div>
             </form>
@@ -86,7 +118,7 @@
                                     <span class="badge {{ get_status_class(activity.status) }}">{{ translate_status(activity.status).upper() }}</span>
                                 </td>
                                 <td>
-                                    <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#modalVisualizar{{ activity.id }}" title="Visualizar"><i class="fas fa-eye"></i></button>
+                                    <button type="button" class="btn btn-sm btn-info py-0 px-1" data-bs-toggle="modal" data-bs-target="#modalVisualizar{{ activity.id }}" title="Visualizar"><i class="fas fa-eye"></i></button>
                                 </td>
                             </tr>
                             <!-- Modal Visualizar Atividade -->
@@ -131,7 +163,7 @@
                                       </div>
                                       {% if activity.cancellation_reason %}
                                       <div class="col-12">
-                                        <div class="alert alert-warning mt-2 mb-0 fw-semibold" style="font-size:1.05em;">
+                                        <div class="alert" style="background: #fff3cd; color: #333; font-size:1.05em; border: none;">
                                           <i class="fas fa-exclamation-triangle me-1"></i>
                                           Motivo do cancelamento: {{ activity.cancellation_reason }}
                                         </div>
@@ -140,7 +172,7 @@
                                       {% if activity.approved_by %}
                                       <div class="col-12 col-md-6">
                                         <div class="mb-2"><i class="fas fa-user-check me-1 text-secondary"></i> <strong>Aprovado por:</strong></div>
-                                        <div>{{ activity.approved_by.username }}</div>
+                                        <div>{{ activity.approved_by.name }}</div>
                                       </div>
                                       {% endif %}
                                     </div>
@@ -162,15 +194,15 @@
             </div>
             {% if total_paginas > 1 %}
             <nav aria-label="Paginação de atividades">
-                <ul class="pagination justify-content-end mt-3">
+                <ul class="pagination justify-content-center mt-3">
                     <li class="page-item {% if pagina_atual == 1 %}disabled{% endif %}">
-                        <a class="page-link" href="?pagina={{ pagina_atual - 1 }}" tabindex="-1">Anterior</a>
+                        <a class="page-link" href="?pagina={{ pagina_atual - 1 }}{% if request.args.get('property') %}&property={{ request.args.get('property') }}{% endif %}{% if request.args.get('status') %}&status={{ request.args.get('status') }}{% endif %}{% if request.args.get('supervisor') %}&supervisor={{ request.args.get('supervisor') }}{% endif %}{% if request.args.get('data_lancamento_inicio') %}&data_lancamento_inicio={{ request.args.get('data_lancamento_inicio') }}{% endif %}{% if request.args.get('data_lancamento_fim') %}&data_lancamento_fim={{ request.args.get('data_lancamento_fim') }}{% endif %}" tabindex="-1">Anterior</a>
                     </li>
                     {% for pagina in range(1, total_paginas + 1) %}
-                    <li class="page-item {% if pagina == pagina_atual %}active{% endif %}"><a class="page-link" href="?pagina={{ pagina }}">{{ pagina }}</a></li>
+                    <li class="page-item {% if pagina == pagina_atual %}active{% endif %}"><a class="page-link" href="?pagina={{ pagina }}{% if request.args.get('property') %}&property={{ request.args.get('property') }}{% endif %}{% if request.args.get('status') %}&status={{ request.args.get('status') }}{% endif %}{% if request.args.get('supervisor') %}&supervisor={{ request.args.get('supervisor') }}{% endif %}{% if request.args.get('data_lancamento_inicio') %}&data_lancamento_inicio={{ request.args.get('data_lancamento_inicio') }}{% endif %}{% if request.args.get('data_lancamento_fim') %}&data_lancamento_fim={{ request.args.get('data_lancamento_fim') }}{% endif %}">{{ pagina }}</a></li>
                     {% endfor %}
                     <li class="page-item {% if pagina_atual == total_paginas %}disabled{% endif %}">
-                        <a class="page-link" href="?pagina={{ pagina_atual + 1 }}">Próxima</a>
+                        <a class="page-link" href="?pagina={{ pagina_atual + 1 }}{% if request.args.get('property') %}&property={{ request.args.get('property') }}{% endif %}{% if request.args.get('status') %}&status={{ request.args.get('status') }}{% endif %}{% if request.args.get('supervisor') %}&supervisor={{ request.args.get('supervisor') }}{% endif %}{% if request.args.get('data_lancamento_inicio') %}&data_lancamento_inicio={{ request.args.get('data_lancamento_inicio') }}{% endif %}{% if request.args.get('data_lancamento_fim') %}&data_lancamento_fim={{ request.args.get('data_lancamento_fim') }}{% endif %}">Próxima</a>
                     </li>
                 </ul>
             </nav>
@@ -183,6 +215,45 @@
     padding: 0.25em 0.6em !important;
     font-size: 0.85em !important;
     border-radius: 6px;
+}
+
+/* Responsividade dos botões do arquivo */
+.archive-buttons {
+    gap: 0.5rem !important;
+}
+
+.archive-buttons .btn {
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+/* Em telas muito pequenas */
+@media (max-width: 575.98px) {
+    .archive-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .archive-buttons .btn {
+        width: 100%;
+        max-width: 200px;
+        margin-bottom: 0.25rem;
+    }
+}
+
+/* Em telas pequenas */
+@media (min-width: 576px) and (max-width: 767.98px) {
+    .archive-buttons {
+        gap: 0.25rem !important;
+    }
+    
+    .archive-buttons .btn {
+        font-size: 0.9rem;
+        padding: 0.375rem 0.75rem;
+    }
 }
 .badge-status-pending { background: #7b8a97 !important; color: #fff; }
 .badge-status-in-progress { background: #ff9800 !important; color: #fff; }
@@ -262,6 +333,16 @@ $(function() {
       });
     });
   });
+  
+  // Validação do modal PDF - pelo menos um status deve ser selecionado
+  $('#formExportarPDF').on('submit', function(e) {
+    var statusSelecionados = $('input[name="status"]:checked').length;
+    if (statusSelecionados === 0) {
+      e.preventDefault();
+      alert('Por favor, selecione pelo menos um status para gerar o relatório.');
+      return false;
+    }
+  });
 });
 </script>
 <!-- Modal Exportar PDF -->
@@ -302,6 +383,10 @@ $(function() {
                   <label class="form-check-label" for="status_done">REALIZADA</label>
                 </div>
                 <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="status" id="status_in_progress" value="in_progress">
+                  <label class="form-check-label" for="status_in_progress">EM ANDAMENTO</label>
+                </div>
+                <div class="form-check">
                   <input class="form-check-input" type="checkbox" name="status" id="status_not_completed" value="not_completed">
                   <label class="form-check-label" for="status_not_completed">NÃO REALIZADA</label>
                 </div>
@@ -315,7 +400,7 @@ $(function() {
         </div>
         <div class="modal-footer bg-light rounded-bottom-4">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-primary"><i class="fas fa-file-pdf me-1"></i> Gerar PDF</button>
+          <button type="submit" class="btn btn-primary" id="btnGerarPDF"><i class="fas fa-file-pdf me-1"></i> Gerar PDF</button>
         </div>
       </form>
     </div>

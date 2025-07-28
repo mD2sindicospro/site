@@ -58,16 +58,48 @@ def create():
     if request.method == 'POST':
         if new_activity_form.validate_on_submit():
             try:
+                # Verificar se a data de entrega é no passado
+                hoje = datetime.now().date()
+                status_inicial = 'in_progress'
+                if new_activity_form.delivery_date.data and new_activity_form.delivery_date.data < hoje:
+                    status_inicial = 'overdue'
+                
                 activity = Activity(
                     title=new_activity_form.title.data,
                     description=new_activity_form.description.data,
                     property_id=new_activity_form.property.data,
                     responsible_id=new_activity_form.responsible.data,
                     delivery_date=new_activity_form.delivery_date.data,
-                    status='pending',
+                    status=status_inicial,
                     created_by_id=current_user.id
                 )
                 db.session.add(activity)
+                
+                # Send informative message to responsible
+                from app.models.message import Message
+                msg = Message(
+                    receiver_id=new_activity_form.responsible.data,
+                    sender_id=current_user.id,
+                    subject='Nova atividade atribuída',
+                    body=f'{current_user.name} criou uma nova atividade para você: {new_activity_form.title.data}',
+                    read=False
+                )
+                db.session.add(msg)
+                
+                # Se a propriedade tem um supervisor, também envia notificação para ele
+                from app.models.property import Property
+                from app.models.user import User
+                property_obj = Property.query.get(new_activity_form.property.data)
+                if property_obj and property_obj.supervisor_id and property_obj.supervisor_id != current_user.id:
+                    msg_supervisor = Message(
+                        receiver_id=property_obj.supervisor_id,
+                        sender_id=current_user.id,
+                        subject='Nova atividade criada',
+                        body=f'{current_user.name} criou uma nova atividade "{new_activity_form.title.data}" para {User.query.get(new_activity_form.responsible.data).name} no condomínio {property_obj.name}.',
+                        read=False
+                    )
+                    db.session.add(msg_supervisor)
+                
                 db.session.commit()
                 flash('Atividade criada com sucesso', 'success')
                 return redirect(url_for('activity.list'))
@@ -140,6 +172,30 @@ def complete(id):
         
     try:
         activity.status = 'completed'
+        
+        # Envia mensagem ao criador da atividade
+        from app.models.message import Message
+        if activity.created_by_id and activity.created_by_id != current_user.id:
+            msg = Message(
+                receiver_id=activity.created_by_id,
+                sender_id=current_user.id,
+                subject='Atividade enviada para verificação',
+                body=f'{current_user.name} enviou a atividade "{activity.title}" para verificação.',
+                read=False
+            )
+            db.session.add(msg)
+        
+        # Se quem concluiu foi um supervisor, também envia notificação para o responsável
+        if current_user.role == 'supervisor' and activity.responsible_id != current_user.id:
+            msg_responsavel = Message(
+                receiver_id=activity.responsible_id,
+                sender_id=current_user.id,
+                subject='Atividade concluída por supervisor',
+                body=f'{current_user.name} (supervisor) concluiu a atividade "{activity.title}" e enviou para verificação.',
+                read=False
+            )
+            db.session.add(msg_responsavel)
+        
         db.session.commit()
         flash('Atividade marcada como EM VERIFICAÇÃO!', 'success')
     except Exception as e:

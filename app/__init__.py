@@ -28,6 +28,13 @@ def create_app(config_name='default'):
     def before_request():
         g.start_time = time.time()
         g.request_id = f"{datetime.now().strftime('%Y%m%d%H%M%S')}-{id(request)}"
+        
+        # Verificar e executar limpeza automática no primeiro acesso do dia
+        try:
+            from app.scheduler import check_and_cleanup
+            check_and_cleanup()
+        except Exception as e:
+            app.logger.error(f"Erro ao verificar limpeza automática: {str(e)}")
 
     @app.after_request
     def after_request(response):
@@ -56,6 +63,8 @@ def create_app(config_name='default'):
 
     # Inicializa todas as extensões e cria as tabelas
     init_extensions(app)
+
+
 
     # Registra os blueprints
     from app.routes.auth import auth

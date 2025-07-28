@@ -1,7 +1,9 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_required, current_user
 from app.models.user import User
+from app.models.message import Message
 from app.extensions import db
+from datetime import datetime, timedelta
 import flask
 
 admin = Blueprint('admin', __name__, url_prefix='/admin')
@@ -97,6 +99,8 @@ def manage_users():
 
     users = User.query.all()
     return render_template('admin/users.html', users=users)
+
+
 
 @admin.route('/user/create', methods=['GET', 'POST'])
 @login_required

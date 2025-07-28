@@ -14,14 +14,14 @@ import xlsxwriter
 from app.utils.translations import translate_status, get_status_class
 from collections import OrderedDict
 import io
-from reportlab.lib.pagesizes import A4
+from reportlab.lib.pagesizes import A4, landscape
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import cm
 from reportlab.platypus import Table, TableStyle, SimpleDocTemplate, Paragraph, Spacer, Image
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 from unidecode import unidecode
-from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from reportlab.lib.styles import ParagraphStyle
 import os
 # import psutil  # Temporarily disabled
@@ -145,23 +145,16 @@ def serialize_activity(activity):
 @main.route('/home')
 @login_required
 def home():
-    # Get current page from query string
-    current_page = request.args.get('page', 1, type=int)
-    per_page = 20
-
     # Get activities based on user role
     if current_user.role == 'admin':
         query = Activity.query
     elif current_user.role == 'supervisor':
-        query = Activity.query.join(Property).filter(Property.supervisor_id == current_user.id)
+        # Supervisores veem todas as atividades (não apenas das propriedades que supervisionam)
+        query = Activity.query
     else:
         query = Activity.query.filter_by(responsible_id=current_user.id)
 
-    # Calculate total pages
-    total_activities = query.count()
-    total_pages = (total_activities + per_page - 1) // per_page
-
-    # Get activities for current page
+    # Get only the 5 most recent activities (no pagination)
     activities = query.order_by(Activity.created_at.desc()).limit(5).all()
 
     # Buscar as 5 últimas notificações do usuário
@@ -213,8 +206,6 @@ def home():
 
     return render_template('main/home.html',
                          activities=activities,
-                         total_paginas=total_pages,
-                         current_page=current_page,
                          current_date=datetime.now().date(),
                          prazo_humano=prazo_humano,
                          percentual_pendentes=percent_pending,
@@ -226,7 +217,8 @@ def home():
                          total_properties_supervisor=total_properties_supervisor,
                          translate_status=translate_status,
                          get_status_class=get_status_class,
-                         notifications=notifications)
+                         notifications=notifications,
+                         new_activity_form=new_activity_form)
 
 @main.route('/home', methods=['GET', 'POST'])
 @login_required
@@ -238,6 +230,12 @@ def home_post():
 
         if new_activity_form.validate_on_submit():
             try:
+                # Verificar se a data de entrega é no passado
+                hoje = datetime.now().date()
+                status_inicial = 'in_progress'
+                if new_activity_form.delivery_date.data and new_activity_form.delivery_date.data < hoje:
+                    status_inicial = 'overdue'
+                
                 activity = Activity(
                     property_id=new_activity_form.property.data,
                     responsible_id=new_activity_form.responsible.data,
@@ -246,7 +244,7 @@ def home_post():
                     description=new_activity_form.description.data,
                     delivery_date=new_activity_form.delivery_date.data,
                     resolved=False,
-                    status='pending'
+                    status=status_inicial
                 )
                 db.session.add(activity)
                 # Send informative message to responsible
@@ -258,6 +256,19 @@ def home_post():
                     read=False
                 )
                 db.session.add(msg)
+                
+                # Se a propriedade tem um supervisor, também envia notificação para ele
+                property_obj = Property.query.get(new_activity_form.property.data)
+                if property_obj and property_obj.supervisor_id and property_obj.supervisor_id != current_user.id:
+                    msg_supervisor = Message(
+                        receiver_id=property_obj.supervisor_id,
+                        sender_id=current_user.id,
+                        subject='Nova atividade criada',
+                        body=f'{current_user.name} criou uma nova atividade "{new_activity_form.title.data}" para {User.query.get(new_activity_form.responsible.data).name} no condomínio {property_obj.name}.',
+                        read=False
+                    )
+                    db.session.add(msg_supervisor)
+                
                 db.session.commit()
                 current_app.logger.info(f'Atividade criada com sucesso por {current_user.name}')
                 flash('Atividade criada com sucesso!', 'success')
@@ -280,6 +291,14 @@ def home_post():
     total_activities = activities_query.count()
     total_pages = (total_activities + per_page - 1) // per_page
     activities = activities_query.offset((page - 1) * per_page).limit(per_page).all()
+
+    # Buscar as 5 últimas notificações do usuário
+    notifications = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.created_at.desc()).limit(5).all()
+
+    # Create form for new activity
+    new_activity_form = NewActivityForm()
+    new_activity_form.property.choices = [(p.id, p.name) for p in Property.query.filter_by(is_active=True).all()]
+    new_activity_form.responsible.choices = [(u.id, u.name) for u in User.query.filter_by(is_active=True).all()]
 
     # Add completion_date and status_color for each activity
     for a in activities:
@@ -344,30 +363,34 @@ def home_post():
     return render_template('main/home.html',
                          activities=activities,
                          total_paginas=total_pages,
-                         page=page,
-                         percent_pending=percent_pending,
-                         percent_in_progress=percent_in_progress,
-                         percent_completed=percent_completed,
-                         percent_overdue=percent_overdue,
-                         percent_not_completed=percent_not_completed,
-                         percent_canceladas=percent_cancelled,
+                         pagina_atual=page,
+                         percentual_pendentes=percent_pending,
+                         percentual_andamento=percent_in_progress,
+                         percentual_concluidas=percent_completed,
+                         percentual_atrasadas=percent_overdue,
+                         percentual_nao_realizadas=percent_not_completed,
+                         percentual_canceladas=percent_cancelled,
                          total_properties_supervisor=total_properties_supervisor,
                          current_date=datetime.now().date(),
-                         prazo_humano=prazo_humano)
+                         prazo_humano=prazo_humano,
+                         translate_status=translate_status,
+                         get_status_class=get_status_class,
+                         notifications=notifications,
+                         new_activity_form=new_activity_form)
 
 @main.route('/minhas-atividades')
 @login_required
 def my_activities():
     # Atualiza status para 'overdue' se vencido
     hoje = datetime.now().date()
-    pending_activities = Activity.query.filter(
+    overdue_activities = Activity.query.filter(
         Activity.responsible_id == current_user.id,
-        Activity.status == 'pending',
+        Activity.status == 'in_progress',
         Activity.delivery_date < hoje
     ).all()
-    for act in pending_activities:
+    for act in overdue_activities:
         act.status = 'overdue'
-    if pending_activities:
+    if overdue_activities:
         db.session.commit()
 
     new_activity_form = NewActivityForm()
@@ -387,9 +410,8 @@ def my_activities():
             Activity.status.notin_(['not_completed', 'cancelled'])
         )
     elif current_user.role == 'supervisor':
-        properties_ids = [p.id for p in current_user.properties_supervisionados]
+        # Supervisores veem todas as atividades (não apenas das propriedades que supervisionam)
         activities_query = Activity.query.filter(
-            Activity.property_id.in_(properties_ids),
             Activity.status.notin_(['not_completed', 'cancelled'])
         )
     else:
@@ -437,27 +459,14 @@ def my_activities():
         current_date=datetime.now().date()
     )
 
-@main.route('/atividade/<int:atividade_id>/aceitar', methods=['POST'])
-@login_required
-def aceitar_atividade(atividade_id):
-    atividade = Activity.query.get_or_404(atividade_id)
-    if atividade.responsible_id != current_user.id:
-        abort(403)
-    if atividade.status in ['pending', 'correction']:
-        atividade.status = 'in_progress'
-        db.session.commit()
-        flash('Atividade aceita com sucesso!', 'success')
-    elif atividade.status == 'overdue':
-        atividade.status = 'in_progress'
-        db.session.commit()
-        flash('Atividade aceita, mas permanece como vencida.', 'warning')
-    return redirect(url_for('main.my_activities'))
+
 
 @main.route('/atividade/<int:atividade_id>/concluir', methods=['POST'])
 @login_required
 def concluir_atividade(atividade_id):
     atividade = Activity.query.get_or_404(atividade_id)
-    if atividade.responsible_id != current_user.id:
+    # Permite que responsável ou supervisor conclua a atividade
+    if atividade.responsible_id != current_user.id and current_user.role != 'supervisor':
         current_app.logger.warning(f'Usuário {current_user.name} tentou concluir atividade de outro usuário')
         abort(403)
     
@@ -476,6 +485,18 @@ def concluir_atividade(atividade_id):
                 read=False
             )
             db.session.add(msg)
+        
+        # Se quem concluiu foi um supervisor, também envia notificação para o responsável
+        if current_user.role == 'supervisor' and atividade.responsible_id != current_user.id:
+            msg_responsavel = Message(
+                receiver_id=atividade.responsible_id,
+                sender_id=current_user.id,
+                subject='Atividade concluída por supervisor',
+                body=f'{current_user.name} (supervisor) concluiu a atividade "{atividade.title}" e enviou para verificação.',
+                read=False
+            )
+            db.session.add(msg_responsavel)
+        
             db.session.commit()
         flash('Atividade marcada como EM VERIFICAÇÃO!', 'success')
     except Exception as e:
@@ -489,7 +510,8 @@ def concluir_atividade(atividade_id):
 @login_required
 def desistir_atividade(atividade_id):
     atividade = Activity.query.get_or_404(atividade_id)
-    if atividade.responsible_id != current_user.id:
+    # Permite que responsável ou supervisor desista da atividade
+    if atividade.responsible_id != current_user.id and current_user.role != 'supervisor':
         abort(403)
     if atividade.status in ['pending', 'in_progress']:
         cancellation_reason = request.form.get('cancellation_reason', '').strip()
@@ -515,18 +537,12 @@ def desistir_atividade(atividade_id):
 @main.route('/approvals')
 @login_required
 def approvals():
-    if not hasattr(current_user, 'role') or current_user.role not in ['supervisor', 'admin']:
+    # Apenas admins podem aprovar atividades
+    if not hasattr(current_user, 'role') or current_user.role != 'admin':
         abort(403)
     
-    if current_user.role == 'supervisor':
-        properties_ids = [p.id for p in current_user.properties_supervisionados]
-        atividades = Activity.query.filter(
-            Activity.status == 'completed'
-        ).filter(
-            (Activity.property_id.in_(properties_ids)) | (Activity.created_by_id == current_user.id)
-        ).order_by(Activity.created_at.desc()).all()
-    else:  # admin
-        atividades = Activity.query.filter_by(status='completed').order_by(Activity.created_at.desc()).all()
+    # Admins veem todas as atividades em verificação
+    atividades = Activity.query.filter_by(status='completed').order_by(Activity.created_at.desc()).all()
     
     return render_template(
         'main/approvals.html',
@@ -540,18 +556,10 @@ def approvals():
 @main.route('/aprovar-atividade/<int:atividade_id>', methods=['POST'])
 @login_required
 def aprovar_atividade(atividade_id):
-    if not hasattr(current_user, 'role') or current_user.role not in ['supervisor', 'admin']:
+    # Apenas admins podem aprovar atividades
+    if not hasattr(current_user, 'role') or current_user.role != 'admin':
         abort(403)
     atividade = Activity.query.get_or_404(atividade_id)
-    # Se for supervisor, não pode aprovar atividades criadas por supervisores
-    if current_user.role == 'supervisor':
-        if atividade.created_by and atividade.created_by.role == 'supervisor':
-            flash('Apenas administradores podem aprovar atividades de supervisores.', 'danger')
-            return redirect(url_for('main.approvals'))
-        properties_ids = [p.id for p in current_user.properties_supervisionados]
-        if atividade.property_id not in properties_ids:
-            flash('Você não tem permissão para aprovar atividades desta propriedade.', 'danger')
-            return redirect(url_for('main.approvals'))
     if atividade.status == 'completed':
         atividade.status = 'done'
         atividade.approved_by_id = current_user.id
@@ -565,6 +573,18 @@ def aprovar_atividade(atividade_id):
             read=False
         )
         db.session.add(msg)
+        
+        # Se a atividade tem um supervisor, também envia notificação para ele
+        if atividade.property and atividade.property.supervisor_id:
+            msg_supervisor = Message(
+                receiver_id=atividade.property.supervisor_id,
+                sender_id=current_user.id,
+                subject='Atividade aprovada',
+                body=f'{current_user.name} aprovou a atividade "{atividade.title}" que você supervisiona.',
+                read=False
+            )
+            db.session.add(msg_supervisor)
+        
         db.session.commit()
         flash('Atividade aprovada com sucesso!', 'success')
     else:
@@ -574,18 +594,10 @@ def aprovar_atividade(atividade_id):
 @main.route('/recusar-atividade/<int:atividade_id>', methods=['POST'])
 @login_required
 def recusar_atividade(atividade_id):
-    if not hasattr(current_user, 'role') or current_user.role not in ['supervisor', 'admin']:
+    # Apenas admins podem recusar atividades
+    if not hasattr(current_user, 'role') or current_user.role != 'admin':
         abort(403)
     atividade = Activity.query.get_or_404(atividade_id)
-    # Se for supervisor, não pode recusar atividades criadas por supervisores
-    if current_user.role == 'supervisor':
-        if atividade.created_by and atividade.created_by.role == 'supervisor':
-            flash('Apenas administradores podem recusar atividades de supervisores.', 'danger')
-            return redirect(url_for('main.approvals'))
-        properties_ids = [p.id for p in current_user.properties_supervisionados]
-        if atividade.property_id not in properties_ids:
-            flash('Você não tem permissão para recusar atividades desta propriedade.', 'danger')
-            return redirect(url_for('main.approvals'))
     if atividade.status == 'completed':
         motivo = request.form.get('rejection_reason', '').strip()
         if not motivo:
@@ -593,6 +605,28 @@ def recusar_atividade(atividade_id):
             return redirect(url_for('main.approvals'))
         atividade.status = 'not_completed'
         atividade.rejection_reason = motivo
+        
+        # Mensagem para o responsável
+        msg = Message(
+            receiver_id=atividade.responsible_id,
+            sender_id=current_user.id,
+            subject='Atividade recusada',
+            body=f'{current_user.name} recusou sua atividade: {atividade.title}. Motivo: {motivo}',
+            read=False
+        )
+        db.session.add(msg)
+        
+        # Se a atividade tem um supervisor, também envia notificação para ele
+        if atividade.property and atividade.property.supervisor_id:
+            msg_supervisor = Message(
+                receiver_id=atividade.property.supervisor_id,
+                sender_id=current_user.id,
+                subject='Atividade recusada',
+                body=f'{current_user.name} recusou a atividade "{atividade.title}" que você supervisiona. Motivo: {motivo}',
+                read=False
+            )
+            db.session.add(msg_supervisor)
+        
         db.session.commit()
         flash('Atividade recusada com sucesso!', 'warning')
     else:
@@ -617,9 +651,8 @@ def archive():
     data_lancamento_fim = request.args.get('data_lancamento_fim')
 
     if current_user.role == 'supervisor':
-        properties_ids = [p.id for p in current_user.properties_supervisionados]
+        # Supervisores veem todas as atividades arquivadas
         atividades_query = Activity.query.filter(
-            Activity.property_id.in_(properties_ids),
             Activity.status.in_(['done', 'not_completed', 'cancelled'])
         )
     elif current_user.role == 'admin':
@@ -707,18 +740,10 @@ def updates():
 @main.route('/atividade/<int:atividade_id>/solicitar-correcao', methods=['POST'])
 @login_required
 def solicitar_correcao_atividade(atividade_id):
-    if not hasattr(current_user, 'role') or current_user.role not in ['supervisor', 'admin']:
+    # Apenas admins podem solicitar correção de atividades
+    if not hasattr(current_user, 'role') or current_user.role != 'admin':
         abort(403)
     atividade = Activity.query.get_or_404(atividade_id)
-    # Se for supervisor, não pode solicitar correção de atividades criadas por supervisores
-    if current_user.role == 'supervisor':
-        if atividade.created_by and atividade.created_by.role == 'supervisor':
-            flash('Apenas administradores podem solicitar correção de atividades de supervisores.', 'danger')
-            return redirect(url_for('main.approvals'))
-        properties_ids = [p.id for p in current_user.properties_supervisionados]
-        if atividade.property_id not in properties_ids:
-            flash('Você não tem permissão para solicitar correção desta atividade.', 'danger')
-            return redirect(url_for('main.approvals'))
     if atividade.status == 'completed':
         motivo = request.form.get('motivo_correcao', '').strip()
         if not motivo:
@@ -736,6 +761,18 @@ def solicitar_correcao_atividade(atividade_id):
             read=False
         )
         db.session.add(msg)
+        
+        # Se a atividade tem um supervisor, também envia notificação para ele
+        if atividade.property and atividade.property.supervisor_id:
+            msg_supervisor = Message(
+                receiver_id=atividade.property.supervisor_id,
+                sender_id=current_user.id,
+                subject='Correção solicitada na atividade',
+                body=f'{current_user.name} solicitou correção na atividade "{atividade.title}" que você supervisiona. Motivo: {motivo}',
+                read=False
+            )
+            db.session.add(msg_supervisor)
+        
         db.session.commit()
         flash('Correção solicitada com sucesso!', 'warning')
     else:
@@ -752,8 +789,8 @@ def supervisor_activities():
     filtro_status = request.args.get('status', type=str)
     page = request.args.get('page', 1, type=int)
     per_page = 20
+    # Supervisores veem todas as atividades (não apenas das propriedades que supervisionam)
     atividades_query = Activity.query.filter(
-        Activity.property_id.in_(properties_ids),
         Activity.status.notin_(['not_completed', 'cancelled'])
     )
     if filtro_property:
@@ -917,8 +954,10 @@ def reports():
         ids_ativos = [p.id for p in properties_ativos]
         atividades_query = Activity.query.filter(Activity.property_id.in_(ids_ativos))
     elif current_user.is_supervisor:
-        properties_ids = [p.id for p in Property.query.filter_by(supervisor_id=current_user.id, is_active=True)]
-        atividades_query = Activity.query.filter(Activity.property_id.in_(properties_ids))
+        # Supervisores veem todas as atividades
+        properties_ativos = Property.query.filter_by(is_active=True).all()
+        ids_ativos = [p.id for p in properties_ativos]
+        atividades_query = Activity.query.filter(Activity.property_id.in_(ids_ativos))
     else:
         activities_query = Activity.query.filter(
             Activity.responsible_id == current_user.id,
@@ -1369,12 +1408,26 @@ def exportar_pdf():
     data_fim = request.args.get('data_lancamento_fim')
     status = request.args.getlist('status')
 
-    # Filtro base: status arquivados
-    atividades_query = Activity.query.filter(Activity.status.in_(['done', 'not_completed', 'cancelled']))
+    # Filtro base: apenas status marcados no modal
+    if status:
+        # Se status foram marcados no modal, usar apenas eles
+        print(f"=== DEBUG: Status filtrados: {status} ===")
+        print(f"=== DEBUG: Tipos dos status: {[type(s) for s in status]} ===")
+        print(f"=== DEBUG: Status 'not_completed' existe? {'not_completed' in status} ===")
+        atividades_query = Activity.query.filter(Activity.status.in_(status))
+        
+        # Debug adicional: verificar quantas atividades existem com cada status
+        for s in status:
+            count = Activity.query.filter(Activity.status == s).count()
+            print(f"=== DEBUG: Status '{s}' tem {count} atividades ===")
+    else:
+        # Se nenhum status foi marcado, não retornar nenhuma atividade
+        # (força o usuário a selecionar pelo menos um status)
+        print("=== DEBUG: Nenhum status selecionado ===")
+        atividades_query = Activity.query.filter(Activity.id == 0)  # Query vazia
+    
     if property_id:
         atividades_query = atividades_query.filter(Activity.property_id == property_id)
-    if status:
-        atividades_query = atividades_query.filter(Activity.status.in_(status))
     if data_inicio:
         try:
             data_inicio_dt = datetime.strptime(data_inicio, '%d/%m/%Y')
@@ -1389,6 +1442,24 @@ def exportar_pdf():
         atividades_query = atividades_query.filter(Activity.created_at < data_fim_dt)
     atividades_query = atividades_query.order_by(Activity.created_at.desc())
     atividades = atividades_query.all()
+    
+    # Debug: verificar os status das atividades
+    print("=== DEBUG: Status das atividades ===")
+    print(f"Total de atividades encontradas: {len(atividades)}")
+    print(f"Query SQL: {atividades_query}")
+    for a in atividades:
+        print(f"ID: {a.id}, Título: {a.title}, Status: {a.status}, Traduzido: {translate_status(a.status)}")
+    print("=== FIM DEBUG ===")
+    
+    # Verificar se há dados para exportar
+    if not atividades:
+        flash('Nenhuma atividade encontrada com os filtros selecionados. Verifique os status, período ou condomínio escolhidos.', 'warning')
+        return redirect(url_for('main.archive'))
+    
+    # Verificação adicional para garantir que há dados válidos
+    if len(atividades) == 0:
+        flash('Nenhuma atividade encontrada com os filtros selecionados. Verifique os status, período ou condomínio escolhidos.', 'warning')
+        return redirect(url_for('main.archive'))
 
     # Nome do condomínio
     nome_condominio = 'Todos os Condomínios'
@@ -1397,69 +1468,202 @@ def exportar_pdf():
         if prop:
             nome_condominio = prop.name
 
-    # Gerar PDF com platypus
+    # Gerar PDF com platypus em modo paisagem
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=2*cm, rightMargin=2*cm, topMargin=2*cm, bottomMargin=2*cm)
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), leftMargin=1*cm, rightMargin=1*cm, topMargin=1*cm, bottomMargin=1*cm)
     elements = []
     styles = getSampleStyleSheet()
-    # Logo centralizada
-    try:
-        logo_path = 'app/static/images/logo.png'
-        img = Image(logo_path, width=3*cm, height=1.5*cm)
-        img.hAlign = 'CENTER'
-        elements.append(img)
-    except Exception as e:
-        pass
-    # Cabeçalho centralizado (sem itálico, fonte menor no título)
-    title_style = ParagraphStyle('title', parent=styles['Title'], alignment=TA_CENTER, fontSize=15)
-    heading_style = ParagraphStyle('heading', parent=styles['Heading3'], alignment=TA_CENTER, fontSize=12, fontName='Helvetica')
-    heading_bold = ParagraphStyle('heading_bold', parent=styles['Heading3'], alignment=TA_CENTER, fontSize=12, fontName='Helvetica-Bold')
-    elements.append(Paragraph('<b>RELATÓRIO DE ATIVIDADES</b>', title_style))
-    periodo_str = f'Período: {data_inicio or ""} a {data_fim or ""}'
-    elements.append(Paragraph(periodo_str, heading_style))
-    elements.append(Paragraph(nome_condominio, heading_bold))
-    elements.append(Spacer(1, 12))
-    # Tabela principal (sem coluna Motivo)
+    
+    # Definir cores da empresa (azul escuro)
+    empresa_blue = colors.HexColor('#11141b')
+    empresa_light_blue = colors.HexColor('#3498db')
+    empresa_gray = colors.HexColor('#f8f9fa')
+    
+    # Estilos profissionais
+    header_style = ParagraphStyle('header', parent=styles['Normal'], 
+                                alignment=TA_CENTER, fontSize=14, fontName='Helvetica-Bold',
+                                textColor=empresa_blue, spaceAfter=10)
+    
+    subtitle_style = ParagraphStyle('subtitle', parent=styles['Normal'],
+                                  alignment=TA_RIGHT, fontSize=12, fontName='Helvetica',
+                                  textColor=colors.grey, spaceAfter=8)
+    
+    company_style = ParagraphStyle('company', parent=styles['Normal'],
+                                 alignment=TA_CENTER, fontSize=14, fontName='Helvetica-Bold',
+                                 textColor=empresa_blue, spaceAfter=20)
+    
+    # Estilo para a logo alinhada
+    logo_style = ParagraphStyle('logo', parent=styles['Normal'],
+                               alignment=TA_LEFT, fontSize=12, fontName='Helvetica',
+                               textColor=empresa_blue, spaceAfter=20, spaceBefore=10)
+    
+    # Cabeçalho profissional com duas colunas
+    elements.append(Spacer(1, 10))
+    
+    # Cabeçalho profissional com layout melhorado
+    header_data = [
+        [
+            # Coluna esquerda - Logo com espaçamento
+            Paragraph('''
+                <para align="left">
+                    <img src="app/static/images/logo.png" width="3.5cm" height="1.8cm" valign="middle"/>
+                </para>
+            ''', logo_style),
+            
+            # Coluna central - Título, período e nome do condomínio com hierarquia visual
+            Paragraph(f'''
+                <para align="center">
+                    <font size="12" color="#1a1a1a"><b>RELATÓRIO DE ATIVIDADES</b></font><br/>
+                    <font size="8" color="#666666">{f'Período: {data_inicio or "Início"} a {data_fim or "Atual"}' if data_inicio or data_fim else ''}</font><br/>
+                    <font size="11" color="#2c3e50"><b>{nome_condominio}</b></font>
+                </para>
+            ''', header_style),
+            
+            # Coluna direita - Informações da empresa com layout profissional
+            Paragraph(f'''
+                <para align="right">
+                    <font size="9" color="#34495e"><b>MD2 SÍNDICOS PROFISSIONAIS</b></font><br/>
+                    <font size="7" color="#7f8c8d">Relatório gerado em:</font><br/>
+                    <font size="7" color="#7f8c8d">{datetime.now().strftime("%d/%m/%Y às %H:%M")}</font><br/>
+                    <font size="7" color="#7f8c8d">Emitido por: {current_user.name}</font>
+                </para>
+            ''', ParagraphStyle('footer', parent=styles['Normal'],
+                              alignment=TA_RIGHT, fontSize=8, fontName='Helvetica',
+                              textColor=colors.grey, rightIndent=0))
+        ]
+    ]
+    header_table = Table(header_data, colWidths=[6*cm, 9*cm, 7*cm])
+    header_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),  # Alinhamento vertical no meio
+        ('LEFTPADDING', (0,0), (-1,-1), 0),
+        ('RIGHTPADDING', (0,0), (-1,-1), 0),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ('BACKGROUND', (0,0), (-1,-1), colors.white),
+    ]))
+    elements.append(header_table)
+    elements.append(Spacer(1, 30))
+    # Tabela principal com coluna de conclusão
     data = [[
-        'Lançamento', 'Responsável', 'Título', 'Status'
+        'Lançamento', 'Responsável', 'Título', 'Status', 'Conclusão'
     ]]
     observacoes = []
     for a in atividades:
         lancamento = a.created_at.strftime('%d/%m/%Y') if a.created_at else ''
         responsavel = a.responsible.name if a.responsible else ''
         titulo = a.title
+        # Garantir que o status seja exatamente o do banco
         status_str = translate_status(a.status)
+        # Debug adicional para verificar a tradução
+        print(f"DEBUG PDF - ID: {a.id}, Status DB: {a.status}, Status Traduzido: {status_str}")
+        print(f"DEBUG PDF - Status original: '{a.status}', Traduzido: '{status_str}'")
         motivo = a.cancellation_reason or ''
-        data.append([lancamento, responsavel, titulo, status_str])
+        print(f"=== DEBUG: Atividade '{titulo}' - Status: {a.status}, Motivo: '{motivo}' ===")
+        # Data de conclusão - apenas para status 'done'
+        conclusao = a.delivery_date.strftime('%d/%m/%Y') if a.status == 'done' and a.delivery_date else '—'
+        data.append([lancamento, responsavel, titulo, status_str, conclusao])
         # Se for cancelada ou não realizada e tiver motivo, adiciona em observações
         if a.status in ['cancelled', 'not_completed'] and motivo:
             observacoes.append([titulo, status_str, motivo])
-    table = Table(data, colWidths=[3*cm, 3*cm, 7*cm, 3*cm])
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f1f1f1')),
-        ('TEXTCOLOR', (0,0), (-1,0), colors.black),
-        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            print(f"=== DEBUG: Adicionando observação - Título: {titulo}, Status: {status_str}, Motivo: {motivo} ===")
+    
+    # Verificar se há dados além do cabeçalho
+    if len(data) <= 1:  # Apenas cabeçalho
+        flash('Nenhuma atividade encontrada com os filtros selecionados. Verifique os status, período ou condomínio escolhidos.', 'warning')
+        return redirect(url_for('main.archive'))
+    
+    # Verificação final antes de criar a tabela
+    if not data or len(data) < 2:
+        flash('Nenhuma atividade encontrada com os filtros selecionados. Verifique os status, período ou condomínio escolhidos.', 'warning')
+        return redirect(url_for('main.archive'))
+    
+    try:
+        print(f"=== DEBUG: Criando tabela com {len(data)} linhas ===")
+        print(f"=== DEBUG: Dados da tabela: {data} ===")
+        table = Table(data, colWidths=[3.5*cm, 3.5*cm, 8*cm, 3*cm, 3*cm])
+        print(f"=== DEBUG: Tabela criada com sucesso ===")
+        
+        # Criar lista de estilos da tabela
+        table_style = [
+            # Cabeçalho da tabela
+            ('BACKGROUND', (0,0), (-1,0), empresa_blue),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
         ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0,0), (-1,0), 11),
+            ('FONTSIZE', (0,0), (-1,0), 9),
         ('BOTTOMPADDING', (0,0), (-1,0), 8),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
-        ('FONTSIZE', (0,1), (-1,-1), 10),
+            ('TOPPADDING', (0,0), (-1,0), 6),
+            
+            # Linhas alternadas para melhor legibilidade (apenas se houver mais de 1 linha de dados)
+            ('BACKGROUND', (0,1), (-1,-1), colors.white),
+        ]
+        
+        # Aplicar linhas alternadas apenas se houver mais de 1 linha de dados
+        if len(data) > 2:  # Mais de 1 linha de dados (além do cabeçalho)
+            table_style.extend([
+                ('BACKGROUND', (0,2), (-1,2), empresa_gray),
+                ('BACKGROUND', (0,4), (-1,4), empresa_gray),
+                ('BACKGROUND', (0,6), (-1,6), empresa_gray),
+                ('BACKGROUND', (0,8), (-1,8), empresa_gray),
+                ('BACKGROUND', (0,10), (-1,10), empresa_gray),
+            ])
+        
+        # Adicionar estilos de alinhamento e formatação
+        table_style.extend([
+            # Alinhamento e formatação
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-    ]))
-    elements.append(table)
-    # Se houver observações, adicionar seção após a tabela
-    if observacoes:
-        elements.append(Spacer(1, 18))
-        obs_title_style = ParagraphStyle('obs_title', parent=styles['Heading3'], alignment=TA_CENTER, fontSize=12, fontName='Helvetica-Bold')
-        elements.append(Paragraph('OBSERVAÇÕES', obs_title_style))
-        for titulo, status_str, motivo in observacoes:
-            obs_text = f'• <b>{titulo} - {status_str}:</b> {motivo}'
-            elements.append(Paragraph(obs_text, styles['Normal']))
-            elements.append(Spacer(1, 4))
-    # Nome do arquivo PDF
-    nome_pdf = f'RELATORIO-{unidecode(nome_condominio).replace(" ", "_").upper()}.pdf'
-    # Definir título do documento PDF (aba do visualizador)
-    doc.title = f'RELATÓRIO - {nome_condominio}'
-    doc.build(elements)
-    buffer.seek(0)
-    return send_file(buffer, as_attachment=True, download_name=nome_pdf, mimetype='application/pdf') 
+            ('FONTSIZE', (0,1), (-1,-1), 8),
+            ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
+            
+            # Bordas profissionais
+            ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+            ('LINEBELOW', (0,0), (-1,0), 1, empresa_blue),
+            
+            # Espaçamento interno reduzido
+            ('BOTTOMPADDING', (0,1), (-1,-1), 6),
+            ('TOPPADDING', (0,1), (-1,-1), 6),
+            ('LEFTPADDING', (0,0), (-1,-1), 4),
+            ('RIGHTPADDING', (0,0), (-1,-1), 4),
+        ])
+        
+        table.setStyle(TableStyle(table_style))
+        print(f"=== DEBUG: Estilo da tabela aplicado com sucesso ===")
+        elements.append(table)
+        print(f"=== DEBUG: Tabela adicionada aos elementos ===")
+        
+        # Se houver observações, adicionar seção após a tabela
+        print(f"=== DEBUG: Total de observações: {len(observacoes)} ===")
+        if observacoes:
+            print(f"=== DEBUG: Adicionando seção de observações ===")
+            elements.append(Spacer(1, 20))
+            
+            # Título da seção de observações
+            obs_title_style = ParagraphStyle('obs_title', parent=styles['Normal'], 
+                                           alignment=TA_CENTER, fontSize=12, fontName='Helvetica-Bold',
+                                           textColor=empresa_blue, spaceAfter=12)
+            elements.append(Paragraph('OBSERVAÇÕES', obs_title_style))
+            
+            # Estilo para as observações
+            obs_style = ParagraphStyle('obs', parent=styles['Normal'],
+                                     fontSize=10, fontName='Helvetica',
+                                     leftIndent=20, spaceAfter=6)
+            
+            for titulo, status_str, motivo in observacoes:
+                obs_text = f'• <b>{titulo} - {status_str}:</b> {motivo}'
+                elements.append(Paragraph(obs_text, obs_style))
+
+        
+        # Nome do arquivo PDF
+        nome_pdf = f'RELATORIO-{unidecode(nome_condominio).replace(" ", "_").upper()}.pdf'
+        # Definir título do documento PDF (aba do visualizador)
+        doc.title = f'RELATÓRIO - {nome_condominio}'
+        print(f"=== DEBUG: Iniciando construção do PDF ===")
+        print(f"=== DEBUG: Número de elementos: {len(elements)} ===")
+        doc.build(elements)
+        print(f"=== DEBUG: PDF construído com sucesso ===")
+        buffer.seek(0)
+        return send_file(buffer, as_attachment=True, download_name=nome_pdf, mimetype='application/pdf')
+    except Exception as e:
+        print(f"Erro ao gerar PDF: {e}")
+        flash('Erro ao gerar o PDF. Verifique se há dados válidos para os filtros selecionados.', 'error')
+        return redirect(url_for('main.archive')) 
