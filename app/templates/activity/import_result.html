@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Resultado da Importação{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-10 offset-md-1">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Resultado da Importação de Atividades
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Resumo -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">{{ summary.total_rows }}</h5>
+                                    <p class="card-text">Total de Linhas</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">{{ summary.success_count }}</h5>
+                                    <p class="card-text">Importadas com Sucesso</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">{{ summary.error_count }}</h5>
+                                    <p class="card-text">Erros</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">
+                                        {% if summary.total_rows > 0 %}
+                                            {{ "%.1f"|format((summary.success_count / summary.total_rows) * 100) }}%
+                                        {% else %}
+                                            0%
+                                        {% endif %}
+                                    </h5>
+                                    <p class="card-text">Taxa de Sucesso</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Atividades Importadas com Sucesso -->
+                    {% if summary.successful_imports %}
+                    <div class="alert alert-success">
+                        <h6><i class="fas fa-check-circle me-2"></i>Atividades Importadas com Sucesso:</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Linha</th>
+                                        <th>Título</th>
+                                        <th>Condomínio</th>
+                                        <th>Responsável</th>
+                                        <th>Data Entrega</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for atividade in summary.successful_imports %}
+                                    <tr>
+                                        <td>{{ atividade.linha }}</td>
+                                        <td>{{ atividade.titulo }}</td>
+                                        <td>{{ atividade.condominio }}</td>
+                                        <td>{{ atividade.responsavel }}</td>
+                                        <td>{{ atividade.data_entrega }}</td>
+                                        <td>
+                                            <span class="badge bg-primary">{{ atividade.status }}</span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Atividades que Falharam -->
+                    {% if summary.failed_imports %}
+                    <div class="alert alert-danger">
+                        <h6><i class="fas fa-times-circle me-2"></i>Atividades que Falharam na Importação:</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Linha</th>
+                                        <th>Título</th>
+                                        <th>Condomínio</th>
+                                        <th>Responsável</th>
+                                        <th>Data Entrega</th>
+                                        <th>Erro</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for atividade in summary.failed_imports %}
+                                    <tr>
+                                        <td>{{ atividade.linha }}</td>
+                                        <td>{{ atividade.titulo }}</td>
+                                        <td>{{ atividade.condominio }}</td>
+                                        <td>{{ atividade.responsavel }}</td>
+                                        <td>{{ atividade.data_entrega }}</td>
+                                        <td>
+                                            <span class="text-danger">{{ atividade.erro }}</span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Mensagem de sucesso -->
+                    {% if summary.success_count > 0 %}
+                    <div class="alert alert-success">
+                        <h6><i class="fas fa-check-circle me-2"></i>Importação Concluída!</h6>
+                        <p class="mb-0">
+                            {{ summary.success_count }} atividades foram importadas com sucesso.
+                            {% if summary.error_count > 0 %}
+                                {{ summary.error_count }} linhas apresentaram erros e foram ignoradas.
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+
+                    <!-- Botões de ação -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('activity.import_activities') }}" class="btn btn-outline-primary me-md-2">
+                            <i class="fas fa-upload me-2"></i>
+                            Nova Importação
+                        </a>
+                        <a href="{{ url_for('activity.list') }}" class="btn btn-primary">
+                            <i class="fas fa-list me-2"></i>
+                            Ver Atividades
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dicas para próximas importações -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        Dicas para Próximas Importações
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>Certifique-se de que os nomes dos condomínios e responsáveis estão exatamente como cadastrados no sistema</li>
+                        <li>Use o template fornecido como base para criar seus arquivos</li>
+                        <li>Verifique se as datas estão no formato correto (YYYY-MM-DD ou DD/MM/YYYY)</li>
+                        <li>Evite caracteres especiais nos títulos e descrições</li>
+                        <li>Mantenha as descrições com pelo menos 10 caracteres</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

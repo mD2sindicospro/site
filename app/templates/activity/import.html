@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Importar Atividades{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-file-excel me-2"></i>
+                        Importar Atividades via Excel
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>Instruções:</h6>
+                        <ul class="mb-0">
+                            <li>O arquivo deve estar no formato Excel (.xlsx)</li>
+                            <li>As colunas obrigatórias são: <strong>titulo</strong>, <strong>descricao</strong>, <strong>condominio</strong>, <strong>responsavel</strong>, <strong>data_entrega</strong></li>
+                            <li>As datas devem estar no formato DD/MM/AAAA (formato brasileiro)</li>
+                            <li>Todas as atividades serão criadas com status "Em Andamento"</li>
+                            <li>Os nomes de condomínios e responsáveis devem corresponder exatamente aos cadastrados no sistema</li>
+                        </ul>
+                    </div>
+
+                    <div class="mb-3">
+                        <a href="{{ url_for('activity.download_template') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-download me-2"></i>
+                            Baixar Template Excel
+                        </a>
+                    </div>
+
+                    <form method="POST" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.excel_file.id }}" class="form-label">
+                                <i class="fas fa-file-upload me-2"></i>
+                                Selecione o arquivo Excel
+                            </label>
+                            {{ form.excel_file(class="form-control", accept=".xlsx,.xls") }}
+                            {% if form.excel_file.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.excel_file.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('activity.list') }}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Voltar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-upload me-2"></i>
+                                Importar Atividades
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,12 +1,15 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, send_file
 from flask_login import login_required, current_user
 from app.models.activity import Activity
 from app.models.property import Property
 from app.models.user import User
 from app.extensions import db
 from datetime import datetime
-from app.forms.activity import NewActivityForm
+from app.forms.activity import NewActivityForm, ImportActivitiesForm
 from flask_wtf.csrf import generate_csrf
+import os
+import tempfile
+from app.utils.excel_importer import ActivityExcelImporter
 
 activity = Blueprint('activity', __name__, url_prefix='/activity')
 
@@ -87,8 +90,6 @@ def create():
                 db.session.add(msg)
                 
                 # Se a propriedade tem um supervisor, também envia notificação para ele
-                from app.models.property import Property
-                from app.models.user import User
                 property_obj = Property.query.get(new_activity_form.property.data)
                 if property_obj and property_obj.supervisor_id and property_obj.supervisor_id != current_user.id:
                     msg_supervisor = Message(
@@ -213,4 +214,67 @@ def api_choices():
         'properties': [{'id': p.id, 'nome': p.name} for p in properties],
         'responsaveis': [{'id': u.id, 'nome': u.name} for u in responsaveis],
         'csrf_token': generate_csrf()
-    }) 
+    })
+
+@activity.route('/import', methods=['GET', 'POST'])
+@login_required
+def import_activities():
+    """Página para importar atividades via Excel"""
+    if not (current_user.is_admin or current_user.is_supervisor):
+        flash('Você não tem permissão para importar atividades', 'danger')
+        return redirect(url_for('main.home'))
+    
+    form = ImportActivitiesForm()
+    
+    if request.method == 'POST' and form.validate_on_submit():
+        try:
+            # Salva o arquivo temporariamente
+            file = form.excel_file.data
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp_file:
+                file.save(tmp_file.name)
+                tmp_file_path = tmp_file.name
+            
+            # Processa a importação
+            importer = ActivityExcelImporter()
+            success = importer.import_activities(tmp_file_path, current_user.id)
+            summary = importer.get_summary()
+            
+            # Remove o arquivo temporário
+            os.unlink(tmp_file_path)
+            
+            if success and summary['success_count'] > 0:
+                flash(f'Importação concluída! {summary["success_count"]} atividades importadas com sucesso.', 'success')
+                if summary['error_count'] > 0:
+                    flash(f'{summary["error_count"]} linhas com erro. Verifique os detalhes abaixo.', 'warning')
+            else:
+                flash('Nenhuma atividade foi importada. Verifique os erros abaixo.', 'danger')
+            
+            return render_template('activity/import_result.html', summary=summary)
+            
+        except Exception as e:
+            flash(f'Erro durante a importação: {str(e)}', 'danger')
+    
+    return render_template('activity/import.html', form=form)
+
+@activity.route('/import/template')
+@login_required
+def download_template():
+    """Download do template Excel para importação"""
+    if not (current_user.is_admin or current_user.is_supervisor):
+        flash('Você não tem permissão para baixar o template', 'danger')
+        return redirect(url_for('main.home'))
+    
+    try:
+        importer = ActivityExcelImporter()
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp_file:
+            template_path = importer.create_template_excel(tmp_file.name)
+        
+        return send_file(
+            template_path,
+            as_attachment=True,
+            download_name='template_importacao_atividades.xlsx',
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+    except Exception as e:
+        flash(f'Erro ao gerar template: {str(e)}', 'danger')
+        return redirect(url_for('activity.import_activities')) 

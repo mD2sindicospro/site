@@ -1463,10 +1463,12 @@ def exportar_pdf():
 
     # Nome do condomínio
     nome_condominio = 'Todos os Condomínios'
+    logo_condominio_url = None
     if property_id:
         prop = Property.query.get(property_id)
         if prop:
             nome_condominio = prop.name
+            logo_condominio_url = prop.logo_url
 
     # Gerar PDF com platypus em modo paisagem
     buffer = io.BytesIO()
@@ -1497,52 +1499,77 @@ def exportar_pdf():
                                alignment=TA_LEFT, fontSize=12, fontName='Helvetica',
                                textColor=empresa_blue, spaceAfter=20, spaceBefore=10)
     
-    # Cabeçalho profissional com duas colunas
-    elements.append(Spacer(1, 10))
-    
-    # Cabeçalho profissional com layout melhorado
-    header_data = [
-        [
-            # Coluna esquerda - Logo com espaçamento
-            Paragraph('''
-                <para align="left">
-                    <img src="app/static/images/logo.png" width="3.5cm" height="1.8cm" valign="middle"/>
-                </para>
-            ''', logo_style),
-            
-            # Coluna central - Título, período e nome do condomínio com hierarquia visual
-            Paragraph(f'''
-                <para align="center">
-                    <font size="12" color="#1a1a1a"><b>RELATÓRIO DE ATIVIDADES</b></font><br/>
-                    <font size="8" color="#666666">{f'Período: {data_inicio or "Início"} a {data_fim or "Atual"}' if data_inicio or data_fim else ''}</font><br/>
-                    <font size="11" color="#2c3e50"><b>{nome_condominio}</b></font>
-                </para>
-            ''', header_style),
-            
-            # Coluna direita - Informações da empresa com layout profissional
-            Paragraph(f'''
-                <para align="right">
-                    <font size="9" color="#34495e"><b>MD2 SÍNDICOS PROFISSIONAIS</b></font><br/>
-                    <font size="7" color="#7f8c8d">Relatório gerado em:</font><br/>
-                    <font size="7" color="#7f8c8d">{datetime.now().strftime("%d/%m/%Y às %H:%M")}</font><br/>
-                    <font size="7" color="#7f8c8d">Emitido por: {current_user.name}</font>
-                </para>
-            ''', ParagraphStyle('footer', parent=styles['Normal'],
-                              alignment=TA_RIGHT, fontSize=8, fontName='Helvetica',
-                              textColor=colors.grey, rightIndent=0))
+    # Função para criar cabeçalho fixo
+    def create_header(canvas, doc):
+        canvas.saveState()
+        
+        # Cabeçalho profissional com layout melhorado
+        header_data = [
+            [
+                # Coluna esquerda - Logo MD2
+                Paragraph('''
+                    <para align="left">
+                        <img src="app/static/images/logo.png" width="3.5cm" height="1.8cm" valign="middle"/>
+                    </para>
+                ''', logo_style),
+                
+                # Coluna central - Título, período e nome do condomínio com hierarquia visual
+                Paragraph(f'''
+                    <para align="center">
+                        <font size="12" color="#1a1a1a"><b>RELATÓRIO DE ATIVIDADES</b></font><br/>
+                        <font size="8" color="#666666">{f'Período: {data_inicio or "Início"} a {data_fim or "Atual"}' if data_inicio or data_fim else ''}</font><br/>
+                        <font size="11" color="#2c3e50"><b>{nome_condominio}</b></font>
+                    </para>
+                ''', header_style),
+                
+                # Coluna direita - Logo do condomínio
+                Paragraph(f'''
+                    <para align="right">
+                        {f'<img src="{logo_condominio_url}" width="3.5cm" height="1.8cm" valign="middle"/>' if logo_condominio_url else ''}
+                    </para>
+                ''', ParagraphStyle('footer', parent=styles['Normal'],
+                                  alignment=TA_RIGHT, fontSize=8, fontName='Helvetica',
+                                  textColor=colors.grey, rightIndent=0))
+            ]
         ]
-    ]
-    header_table = Table(header_data, colWidths=[6*cm, 9*cm, 7*cm])
-    header_table.setStyle(TableStyle([
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),  # Alinhamento vertical no meio
-        ('LEFTPADDING', (0,0), (-1,-1), 0),
-        ('RIGHTPADDING', (0,0), (-1,-1), 0),
-        ('TOPPADDING', (0,0), (-1,-1), 0),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
-        ('BACKGROUND', (0,0), (-1,-1), colors.white),
-    ]))
-    elements.append(header_table)
-    elements.append(Spacer(1, 30))
+        header_table = Table(header_data, colWidths=[6*cm, 9*cm, 7*cm])
+        header_table.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('LEFTPADDING', (0,0), (-1,-1), 0),
+            ('RIGHTPADDING', (0,0), (-1,-1), 0),
+            ('TOPPADDING', (0,0), (-1,-1), 0),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+            ('BACKGROUND', (0,0), (-1,-1), colors.white),
+        ]))
+        
+        # Posicionar cabeçalho no topo da página
+        header_table.wrapOn(canvas, doc.width, doc.height)
+        # Centralizar o cabeçalho na página
+        header_width = 22*cm  # Largura total do cabeçalho (6+9+7)
+        header_x = (doc.width - header_width) / 2 + doc.leftMargin
+        header_table.drawOn(canvas, header_x, doc.height + doc.topMargin - 2.5*cm)
+        
+        # Adicionar rodapé na mesma função
+        footer_text = f'''
+            <para align="center">
+                <font size="8" color="#34495e"><b>MD2 SÍNDICOS PROFISSIONAIS</b></font><br/>
+                <font size="6" color="#7f8c8d">Relatório gerado em: {datetime.now().strftime("%d/%m/%Y às %H:%M")}</font><br/>
+                <font size="6" color="#7f8c8d">Emitido por: {current_user.name}</font>
+            </para>
+        '''
+        footer_paragraph = Paragraph(footer_text, ParagraphStyle('footer_info', parent=styles['Normal'],
+                                                               alignment=TA_CENTER, fontSize=8, fontName='Helvetica',
+                                                               textColor=colors.grey))
+        
+        # Posicionar rodapé no final da página
+        footer_paragraph.wrapOn(canvas, doc.width, doc.height)
+        footer_paragraph.drawOn(canvas, doc.leftMargin, doc.bottomMargin + 1*cm)
+        
+        canvas.restoreState()
+    
+    # Adicionar espaço para o cabeçalho
+    elements.append(Spacer(1, 4*cm))
+    
     # Tabela principal com coluna de conclusão
     data = [[
         'Lançamento', 'Responsável', 'Título', 'Status', 'Conclusão'
@@ -1652,14 +1679,13 @@ def exportar_pdf():
                 obs_text = f'• <b>{titulo} - {status_str}:</b> {motivo}'
                 elements.append(Paragraph(obs_text, obs_style))
 
-        
         # Nome do arquivo PDF
         nome_pdf = f'RELATORIO-{unidecode(nome_condominio).replace(" ", "_").upper()}.pdf'
         # Definir título do documento PDF (aba do visualizador)
         doc.title = f'RELATÓRIO - {nome_condominio}'
         print(f"=== DEBUG: Iniciando construção do PDF ===")
         print(f"=== DEBUG: Número de elementos: {len(elements)} ===")
-        doc.build(elements)
+        doc.build(elements, onFirstPage=create_header, onLaterPages=create_header)
         print(f"=== DEBUG: PDF construído com sucesso ===")
         buffer.seek(0)
         return send_file(buffer, as_attachment=True, download_name=nome_pdf, mimetype='application/pdf')

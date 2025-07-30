@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, SelectField, BooleanField, DateField
-from wtforms.validators import DataRequired, Length
+from wtforms import StringField, TextAreaField, SelectField, BooleanField, DateField, FileField
+from wtforms.validators import DataRequired, Length, Optional
 from app.models.activity import Activity
 
 class NewActivityForm(FlaskForm):
@@ -9,4 +9,7 @@ class NewActivityForm(FlaskForm):
     property = SelectField('Condomínio', coerce=int, validators=[DataRequired()])
     responsible = SelectField('Responsável', coerce=int, validators=[DataRequired()])
     delivery_date = DateField('Data de Entrega', format='%Y-%m-%d', validators=[DataRequired()])
-    resolved = BooleanField('Resolvida') 
+    resolved = BooleanField('Resolvida')
+
+class ImportActivitiesForm(FlaskForm):
+    excel_file = FileField('Arquivo Excel', validators=[DataRequired()]) 

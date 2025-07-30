@@ -17,6 +17,7 @@ class Property(db.Model):
     administrator_name = db.Column(db.String(100))
     administrator_phone = db.Column(db.String(20))
     administrator_email = db.Column(db.String(100))
+    logo_url = db.Column(db.String(500))
 
     # Relationships
     supervisor = db.relationship('User', back_populates='properties_supervisionados')
@@ -24,7 +25,7 @@ class Property(db.Model):
 
     def __init__(self, name=None, address=None, number_of_apartments=None, supervisor_id=None, 
                  is_active=True, entry_date=None, state=None, administrator_name=None, 
-                 administrator_phone=None, administrator_email=None, **kwargs):
+                 administrator_phone=None, administrator_email=None, logo_url=None, **kwargs):
         self.name = name
         self.address = address
         self.number_of_apartments = number_of_apartments
@@ -35,6 +36,7 @@ class Property(db.Model):
         self.administrator_name = administrator_name
         self.administrator_phone = administrator_phone
         self.administrator_email = administrator_email
+        self.logo_url = logo_url
         for k, v in kwargs.items():
             setattr(self, k, v)
 

@@ -4,6 +4,7 @@ from app.models.property import Property
 from app.models.user import User
 from app.extensions import db
 from datetime import datetime
+from app.utils.image_handler import ImageHandler
 
 property_bp = Blueprint('property', __name__, url_prefix='/condominios')
 
@@ -36,6 +37,9 @@ def list():
         administrador_nome = request.form.get('administrador_nome') or request.form.get('edit_administrador_nome')
         administrador_telefone = request.form.get('administrador_telefone') or request.form.get('edit_administrador_telefone')
         administrador_email = request.form.get('administrador_email') or request.form.get('edit_administrador_email')
+        
+        # Processamento da logo
+        logo_url = request.form.get('logo_url')
         # Converter data para formato datetime
         entry_date = None
         if data_entrada:
@@ -47,6 +51,8 @@ def list():
             # Edição
             property_obj = Property.query.get(edit_property_id)
             if property_obj:
+                # Atualiza a URL da logo
+                property_obj.logo_url = logo_url
                 property_obj.name = nome
                 property_obj.address = endereco
                 property_obj.number_of_apartments = numero_apartamentos
@@ -73,10 +79,12 @@ def list():
                 state=estado,
                 administrator_name=administrador_nome,
                 administrator_phone=administrador_telefone,
-                administrator_email=administrador_email
+                administrator_email=administrador_email,
+                logo_url=logo_url
             )
             db.session.add(property_obj)
             db.session.commit()
+            
             flash('Condomínio cadastrado com sucesso!', 'success')
         return redirect(url_for('property.list'))
     # Paginação

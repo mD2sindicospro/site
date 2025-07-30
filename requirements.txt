@@ -29,6 +29,10 @@ pandas==2.2.2
 fpdf==1.7.2
 xlsxwriter==3.1.9
 reportlab==4.0.7
+openpyxl==3.1.2
+
+# Processamento de imagens
+Pillow==10.1.0
 
 # Servidor de produção
 gunicorn==21.2.0
