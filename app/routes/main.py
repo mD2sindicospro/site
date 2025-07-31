@@ -407,17 +407,17 @@ def my_activities():
     per_page = 20
     if current_user.role == 'admin':
         activities_query = Activity.query.filter(
-            Activity.status.notin_(['not_completed', 'cancelled'])
+            Activity.status.notin_(['not_completed', 'cancelled', 'done', 'completed'])
         )
     elif current_user.role == 'supervisor':
         # Supervisores veem todas as atividades (não apenas das propriedades que supervisionam)
         activities_query = Activity.query.filter(
-            Activity.status.notin_(['not_completed', 'cancelled'])
+            Activity.status.notin_(['not_completed', 'cancelled', 'done', 'completed'])
         )
     else:
         activities_query = Activity.query.filter(
             Activity.responsible_id == current_user.id,
-            Activity.status.notin_(['not_completed', 'cancelled'])
+            Activity.status.notin_(['not_completed', 'cancelled', 'done', 'completed'])
         )
     if filter_property:
         activities_query = activities_query.filter(Activity.property_id == filter_property)
@@ -537,8 +537,8 @@ def desistir_atividade(atividade_id):
 @main.route('/approvals')
 @login_required
 def approvals():
-    # Apenas admins podem aprovar atividades
-    if not hasattr(current_user, 'role') or current_user.role != 'admin':
+    # Apenas admins e supervisores podem aprovar atividades
+    if not hasattr(current_user, 'role') or current_user.role not in ['admin', 'supervisor']:
         abort(403)
     
     # Admins veem todas as atividades em verificação
@@ -556,8 +556,8 @@ def approvals():
 @main.route('/aprovar-atividade/<int:atividade_id>', methods=['POST'])
 @login_required
 def aprovar_atividade(atividade_id):
-    # Apenas admins podem aprovar atividades
-    if not hasattr(current_user, 'role') or current_user.role != 'admin':
+    # Apenas admins e supervisores podem aprovar atividades
+    if not hasattr(current_user, 'role') or current_user.role not in ['admin', 'supervisor']:
         abort(403)
     atividade = Activity.query.get_or_404(atividade_id)
     if atividade.status == 'completed':
@@ -594,8 +594,8 @@ def aprovar_atividade(atividade_id):
 @main.route('/recusar-atividade/<int:atividade_id>', methods=['POST'])
 @login_required
 def recusar_atividade(atividade_id):
-    # Apenas admins podem recusar atividades
-    if not hasattr(current_user, 'role') or current_user.role != 'admin':
+    # Apenas admins e supervisores podem recusar atividades
+    if not hasattr(current_user, 'role') or current_user.role not in ['admin', 'supervisor']:
         abort(403)
     atividade = Activity.query.get_or_404(atividade_id)
     if atividade.status == 'completed':
@@ -740,8 +740,8 @@ def updates():
 @main.route('/atividade/<int:atividade_id>/solicitar-correcao', methods=['POST'])
 @login_required
 def solicitar_correcao_atividade(atividade_id):
-    # Apenas admins podem solicitar correção de atividades
-    if not hasattr(current_user, 'role') or current_user.role != 'admin':
+    # Apenas admins e supervisores podem solicitar correção de atividades
+    if not hasattr(current_user, 'role') or current_user.role not in ['admin', 'supervisor']:
         abort(403)
     atividade = Activity.query.get_or_404(atividade_id)
     if atividade.status == 'completed':
@@ -791,7 +791,7 @@ def supervisor_activities():
     per_page = 20
     # Supervisores veem todas as atividades (não apenas das propriedades que supervisionam)
     atividades_query = Activity.query.filter(
-        Activity.status.notin_(['not_completed', 'cancelled'])
+        Activity.status.notin_(['not_completed', 'cancelled', 'done', 'completed'])
     )
     if filtro_property:
         atividades_query = atividades_query.filter(Activity.property_id == filtro_property)
@@ -916,12 +916,12 @@ def reports():
     users = User.query.filter_by(is_active=True).all()
     new_activity_form.responsible.choices = [(u.id, u.name) for u in users]
 
-    # Totais globais para admin
-    total_properties = Property.query.count() if current_user.is_admin else None
-    total_usuarios = User.query.filter_by(is_active=True).count() if current_user.is_admin else None
+    # Totais globais para admin e supervisor
+    total_properties = Property.query.count() if current_user.is_admin or current_user.is_supervisor else None
+    total_usuarios = User.query.filter_by(is_active=True).count() if current_user.is_admin or current_user.is_supervisor else None
     total_pending = total_in_progress = total_completed = total_overdue = total_not_completed = 0
     percent_pending = percent_in_progress = percent_completed = percent_overdue = percent_not_completed = percent_cancelled = 0
-    if current_user.is_admin:
+    if current_user.is_admin or current_user.is_supervisor:
         properties_ativos = Property.query.filter_by(is_active=True).all()
         ids_ativos = [c.id for c in properties_ativos]
         total_properties_supervisor = len(ids_ativos)
@@ -986,11 +986,11 @@ def reports():
 
     atividades = atividades_query.all()
     # Filtro padrão: últimos 3 meses, a não ser que o usuário escolha outro período
-    if not data_lancamento_inicio and not data_lancamento_fim and not current_user.is_admin:
+    if not data_lancamento_inicio and not data_lancamento_fim and not (current_user.is_admin or current_user.is_supervisor):
         data_limite = datetime.now() - timedelta(days=90)
         atividades = [a for a in atividades if a.created_at and a.created_at >= data_limite]
 
-    if current_user.is_admin:
+    if current_user.is_admin or current_user.is_supervisor:
         # Montagem dos gráficos de responsáveis (users)
         responsaveis = User.query.filter_by(is_active=True, role='user').all()
         responsaveis_dict = {u.id: {
@@ -1131,147 +1131,6 @@ def reports():
             translate_status=translate_status,
             get_status_class=get_status_class
         )
-    elif current_user.is_supervisor:
-        # Montar gráficos apenas para o próprio supervisor
-        supervisores = [current_user]
-        supervisores_dict = {}
-        cond_ids = [c.id for c in Property.query.filter_by(supervisor_id=current_user.id, is_active=True).all()]
-        atividades_sup = [a for a in atividades if a.property_id in cond_ids]
-        # Responsáveis para os quais o supervisor abriu atividade
-        responsaveis_ids = set(a.responsible_id for a in atividades_sup if a.created_by_id == current_user.id and a.responsible_id)
-        responsaveis = User.query.filter(User.id.in_(responsaveis_ids)).all() if responsaveis_ids else []
-        responsaveis_dict = {u.id: {
-            'usuario': u,
-            'pending': 0,
-            'in_progress': 0,
-            'overdue': 0,
-            'completed': 0,
-            'not_completed': 0,
-            'tarefas': []
-        } for u in responsaveis}
-        for a in atividades_sup:
-            if a.created_by_id == current_user.id and a.responsible_id and a.responsible_id in responsaveis_dict:
-                if a.status == 'pending':
-                    responsaveis_dict[a.responsible_id]['pending'] += 1
-                elif a.status in ['in_progress', 'correction']:
-                    responsaveis_dict[a.responsible_id]['in_progress'] += 1
-                elif a.status == 'overdue':
-                    responsaveis_dict[a.responsible_id]['overdue'] += 1
-                elif a.status == 'completed':
-                    responsaveis_dict[a.responsible_id]['completed'] += 1
-                elif a.status == 'not_completed':
-                    responsaveis_dict[a.responsible_id]['not_completed'] += 1
-                responsaveis_dict[a.responsible_id]['tarefas'].append(serialize_activity(a))
-        responsaveis_graficos = {}
-        for uid, u in responsaveis_dict.items():
-            responsaveis_graficos[uid] = {
-            'usuario': {'id': u['usuario'].id, 'username': u['usuario'].name},
-            'pending': u['pending'],
-            'in_progress': u['in_progress'],
-            'overdue': u['overdue'],
-            'completed': u['completed'],
-            'not_completed': u['not_completed'],
-            'pendentes': u['pending'],
-            'em_andamento': u['in_progress'],
-            'atrasadas': u['overdue'],
-            'concluidas': u['completed'],
-                'em_verificacao': u['completed'],
-            'nao_realizadas': u['not_completed'],
-            'tarefas': u['tarefas']
-        }
-        supervisores_dict[current_user.id] = {
-            'usuario': current_user,
-            'pending': 0,
-            'in_progress': 0,
-            'overdue': 0,
-            'completed': 0,
-            'not_completed': 0,
-            'tarefas': [],
-            'aguardando_aprovacao': 0
-        }
-        for a in atividades_sup:
-            if a.status == 'pending':
-                supervisores_dict[current_user.id]['pending'] += 1
-            elif a.status in ['in_progress', 'correction']:
-                supervisores_dict[current_user.id]['in_progress'] += 1
-            elif a.status == 'overdue':
-                supervisores_dict[current_user.id]['overdue'] += 1
-            elif a.status == 'completed':
-                supervisores_dict[current_user.id]['completed'] += 1
-                supervisores_dict[current_user.id]['aguardando_aprovacao'] += 1
-            elif a.status == 'not_completed':
-                supervisores_dict[current_user.id]['not_completed'] += 1
-            supervisores_dict[current_user.id]['tarefas'].append(serialize_activity(a))
-        supervisores_graficos = {}
-        for uid, u in supervisores_dict.items():
-            supervisores_graficos[uid] = {
-                'usuario': {'id': u['usuario'].id, 'username': u['usuario'].name},
-                'pending': u['pending'],
-                'in_progress': u['in_progress'],
-                'overdue': u['overdue'],
-                'completed': u['completed'],
-                'not_completed': u['not_completed'],
-                'pendentes': u['pending'],
-                'em_andamento': u['in_progress'],
-                'atrasadas': u['overdue'],
-                'concluidas': u['completed'],
-                'em_verificacao': u['completed'],
-                'nao_realizadas': u['not_completed'],
-                'tarefas': u['tarefas'],
-                'aguardando_aprovacao': u['aguardando_aprovacao']
-            }
-        # PRODUTIVIDADE DIÁRIA
-        if data_lancamento_inicio:
-            data_inicio = datetime.strptime(data_lancamento_inicio, '%d/%m/%Y') if '/' in data_lancamento_inicio else datetime.strptime(data_lancamento_inicio, '%Y-%m-%d')
-        else:
-            data_inicio = (datetime.now() - timedelta(days=89)).replace(hour=0, minute=0, second=0, microsecond=0)
-        if data_lancamento_fim:
-            data_fim = datetime.strptime(data_lancamento_fim, '%d/%m/%Y') if '/' in data_lancamento_fim else datetime.strptime(data_lancamento_fim, '%Y-%m-%d')
-        else:
-            data_fim = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        dias = (data_fim - data_inicio).days + 1
-        produtividade_diaria = OrderedDict()
-        for i in range(dias):
-            dia = (data_inicio + timedelta(days=i)).date()
-            produtividade_diaria[dia.strftime('%d/%m/%Y')] = {'completed': 0, 'done': 0}
-        for a in atividades_sup:
-            if a.status in ['completed', 'done'] and a.created_at:
-                dia = a.created_at.date().strftime('%d/%m/%Y')
-                if dia in produtividade_diaria:
-                    produtividade_diaria[dia][a.status] += 1
-        supervisores_status_grafico = {}
-        for uid, u in supervisores_graficos.items():
-            supervisores_status_grafico[uid] = {
-                'nome': u['usuario']['username'],
-                'pendente': u.get('pendentes', 0),
-                'em_andamento': u.get('em_andamento', 0),
-                'atrasada': u.get('atrasadas', 0),
-                'em_verificacao': u.get('em_verificacao', 0),
-                'realizada': u.get('concluidas', 0),
-                'nao_realizada': u.get('nao_realizadas', 0),
-        }
-        return render_template(
-            'main/reports.html',
-            responsaveis_graficos=responsaveis_graficos,
-            supervisores_graficos=supervisores_graficos,
-            supervisores_status_grafico=supervisores_status_grafico,
-            produtividade_diaria=produtividade_diaria,
-            form=new_activity_form,
-            total_properties=None,
-            total_usuarios=None,
-            total_pending=None,
-            total_in_progress=None,
-            total_completed=None,
-            total_overdue=None,
-            total_not_completed=None,
-            percent_pending=None,
-            percent_in_progress=None,
-            percent_completed=None,
-            percent_overdue=None,
-            percent_not_completed=None,
-            translate_status=translate_status,
-            get_status_class=get_status_class
-        )
     # Usuário comum
     atividades_por_supervisor = {}
     supervisores_status_grafico = {}
@@ -1375,7 +1234,7 @@ def atividades_admin():
     per_page = 20
     atividades_query = Activity.query.filter(
         Activity.property_id.in_([p.id for p in properties]),
-        Activity.status.notin_(['not_completed', 'cancelled'])
+        Activity.status.notin_(['not_completed', 'cancelled', 'done', 'completed'])
     )
     if filtro_property:
         atividades_query = atividades_query.filter(Activity.property_id == filtro_property)
@@ -1678,7 +1537,7 @@ def exportar_pdf():
             for titulo, status_str, motivo in observacoes:
                 obs_text = f'• <b>{titulo} - {status_str}:</b> {motivo}'
                 elements.append(Paragraph(obs_text, obs_style))
-
+        
         # Nome do arquivo PDF
         nome_pdf = f'RELATORIO-{unidecode(nome_condominio).replace(" ", "_").upper()}.pdf'
         # Definir título do documento PDF (aba do visualizador)

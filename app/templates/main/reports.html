@@ -494,7 +494,15 @@ if (document.getElementById('graficoResponsavel')) {
         barPercentage: 0.5,
         categoryPercentage: 0.5,
         scales: {
-            x: { stacked: true },
+            x: { 
+                stacked: true,
+                ticks: {
+                    rotation: -90,
+                    font: {
+                        size: 10
+                    }
+                }
+            },
             y: { stacked: true, beginAtZero: true }
         }
     }
@@ -634,7 +642,15 @@ new Chart(ctxSup2, {
         barPercentage: 0.5,
         categoryPercentage: 0.5,
         scales: {
-            x: { stacked: true },
+            x: { 
+                stacked: true,
+                ticks: {
+                    rotation: -90,
+                    font: {
+                        size: 10
+                    }
+                }
+            },
             y: { stacked: true, beginAtZero: true }
         }
     }

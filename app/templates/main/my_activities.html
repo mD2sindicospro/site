@@ -8,7 +8,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <!-- <h1 class="h2 mb-0">Minhas Atividades</h1> removido -->
     </div>
-    <div class="row mb-3 justify-content-center" id="filtros-atividades" {% if current_user.role != 'user' %}style="display:none;"{% endif %}>
+    <div class="row mb-3 justify-content-center" id="filtros-atividades">
         <div class="col-12 col-md-8 col-lg-6">
             <form method="get" class="d-flex gap-2 align-items-end justify-content-center">
                 <div class="flex-fill">
@@ -29,9 +29,6 @@
                         <option value="correction" {% if request.args.get('status') == 'correction' %}selected{% endif %}>CORREÇÃO</option>
                         <option value="overdue" {% if request.args.get('status') == 'overdue' %}selected{% endif %}>ATRASADA</option>
                         <option value="completed" {% if request.args.get('status') == 'completed' %}selected{% endif %}>EM VERIFICAÇÃO</option>
-                        <option value="done" {% if request.args.get('status') == 'done' %}selected{% endif %}>REALIZADA</option>
-                        <option value="not_completed" {% if request.args.get('status') == 'not_completed' %}selected{% endif %}>NÃO REALIZADA</option>
-                        <option value="cancelled" {% if request.args.get('status') == 'cancelled' %}selected{% endif %}>CANCELADA</option>
                     </select>
                 </div>
                 <div>
@@ -44,54 +41,88 @@
         <div class="col-12">
             <div class="card shadow mb-4">
                 <div class="card-header py-3 rounded-top text-center">
-                    <h6 class="m-0 font-weight-bold text-white" style="text-transform: uppercase;">MINHAS ATIVIDADES</h6>
+                    <h6 class="m-0 font-weight-bold text-white" style="text-transform: uppercase;">LISTA DE ATIVIDADES</h6>
                 </div>
             </div>
             <div class="table-responsive">
-                <table class="table table-bordered text-center align-middle table-atividades" width="100%" cellspacing="0">
+                <table class="table table-bordered text-center align-middle table-atividades" width="100%" cellspacing="0" style="line-height: 1.2; table-layout: fixed;">
+                    <style>
+                        .table-atividades td, .table-atividades th {
+                            padding: 0.5rem 0.75rem !important;
+                            vertical-align: middle !important;
+                            text-align: center !important;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                            white-space: nowrap;
+                        }
+                        .table-atividades tbody tr {
+                            height: auto;
+                        }
+                        
+                        /* Botão de ação mais compacto */
+                        .btn-sm.py-0 {
+                            line-height: 1;
+                            font-size: 0.8rem;
+                            min-height: auto;
+                            height: auto;
+                        }
+                        
+                        /* Garantir que o cabeçalho respeite os limites */
+                        .table-atividades th {
+                            word-wrap: break-word;
+                            overflow-wrap: break-word;
+                        }
+                    </style>
                     <thead>
                         <tr>
-                            <th>Propriedade</th>
-                            <th>Lançamento</th>
-                            <th>Responsável</th>
-                            <th>Atividade</th>
-                            <th>Entregar em</th>
-                            <th>Prazo</th>
-                            <th>Status</th>
-                            <th>Ações</th>
+                            <th class="text-nowrap" style="max-width: 150px; width: 150px;">Condomínio</th>
+                            <th class="text-nowrap" style="max-width: 100px; width: 100px;">Lançamento</th>
+                            <th class="text-nowrap" style="max-width: 120px; width: 120px;">Responsável</th>
+                            <th class="text-nowrap" style="max-width: 250px; width: 250px;">Atividade</th>
+                            <th class="text-nowrap" style="max-width: 80px; width: 80px;">Prazo</th>
+                            <th class="text-nowrap" style="max-width: 120px; width: 120px;">Status</th>
+                            <th class="text-nowrap" style="max-width: 100px; width: 100px;">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% if activities %}
                             {% for activity in activities %}
                             <tr>
-                                <td>{{ activity.property.name if activity.property else '—' }}</td>
-                                <td>{% if activity.created_at %}{{ activity.created_at.strftime('%d/%m/%y') }}{% else %}—{% endif %}</td>
-                                <td>{{ activity.responsible.name if activity.responsible else '—' }}</td>
-                                <td>{{ activity.title }}</td>
-                                <td>{% if activity.delivery_date %}{{ activity.delivery_date.strftime('%d/%m/%y') }}{% else %}—{% endif %}</td>
-                                <td>{% if activity.status in ['completed', 'not_completed', 'finalizada', 'atrasada'] %}—{% elif activity.delivery_date and activity.delivery_date >= current_date %}{{ prazo_humano(current_date, activity.delivery_date) }}{% else %}—{% endif %}</td>
-                                <td>
+                                <td class="text-nowrap" style="max-width: 150px; width: 150px;">{{ activity.property.name if activity.property else '—' }}</td>
+                                <td class="text-nowrap" style="max-width: 100px; width: 100px;">{% if activity.created_at %}{{ activity.created_at.strftime('%d/%m/%y') }}{% else %}—{% endif %}</td>
+                                <td class="text-nowrap" style="max-width: 120px; width: 120px;">{{ activity.responsible.name if activity.responsible else '—' }}</td>
+                                <td class="text-nowrap" style="max-width: 250px; width: 250px;">
+                                    <div class="text-truncate text-center" title="{{ activity.title }}">{{ activity.title }}</div>
+                                </td>
+                                <td class="text-nowrap" style="max-width: 80px; width: 80px;">
+                                    {% if activity.status in ['completed', 'not_completed', 'finalizada', 'atrasada'] %}—{% elif activity.delivery_date and activity.delivery_date >= current_date %}{{ prazo_humano(current_date, activity.delivery_date) }}{% else %}—{% endif %}
+                                    {% if activity.delivery_date %}
+                                        <i class="fas fa-info-circle text-secondary" style="font-size: 0.7rem; margin-left: 3px;" title="Entregar em: {{ activity.delivery_date.strftime('%d/%m/%Y') }}"></i>
+                                    {% endif %}
+                                </td>
+                                <td class="text-nowrap" style="max-width: 120px; width: 120px;">
                                     {% if activity.status %}
-                                    <span class="badge {{ get_status_class(activity.status) }} badge fw-semibold" style="font-size: 1.05em; letter-spacing: 1px;">
+                                    <span class="badge {{ get_status_class(activity.status) }} badge fw-semibold" style="font-size: 0.85em; letter-spacing: 0.5px;">
                                         {{ translate_status(activity.status).upper() }}
                                     </span>
                                     {% else %}
                                     —
                                     {% endif %}
                                 </td>
-                                <td>
-                                    <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#modalVisualizar{{ activity.id }}" title="Visualizar"><i class="fas fa-eye"></i></button>
-                                    {% if activity.responsible and current_user.id == activity.responsible.id %}
-                                        {% if activity.status in ['pending', 'correction', 'overdue'] and activity.status != 'cancelled' %}
-                                            <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modalAceitar{{ activity.id }}" title="Aceitar"><i class="fas fa-check"></i></button>
-                                        {% elif activity.status == 'in_progress' and activity.status != 'cancelled' %}
-                                            <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalConcluir{{ activity.id }}" title="Em Verificação"><i class="fas fa-check-double"></i></button>
+                                <td class="text-nowrap" style="max-width: 100px; width: 100px;">
+                                    <div class="d-flex gap-1 justify-content-center" style="flex-wrap: nowrap;">
+                                        <button type="button" class="btn btn-sm btn-info py-0 px-1" data-bs-toggle="modal" data-bs-target="#modalVisualizar{{ activity.id }}" title="Visualizar"><i class="fas fa-eye"></i></button>
+                                        {% if activity.responsible and (current_user.id == activity.responsible.id or current_user.role == 'supervisor') %}
+                                            {% if activity.status in ['pending', 'correction', 'overdue'] and activity.status != 'cancelled' %}
+                                                <button type="button" class="btn btn-sm btn-warning py-0 px-1" data-bs-toggle="modal" data-bs-target="#modalAceitar{{ activity.id }}" title="Aceitar"><i class="fas fa-check"></i></button>
+                                            {% elif activity.status == 'in_progress' and activity.status != 'cancelled' %}
+                                                <button type="button" class="btn btn-sm btn-success py-0 px-1" data-bs-toggle="modal" data-bs-target="#modalConcluir{{ activity.id }}" title="Em Verificação"><i class="fas fa-check-double"></i></button>
+                                            {% endif %}
                                         {% endif %}
-                                    {% endif %}
-                                    {% if activity.created_by_id and current_user.id == activity.created_by_id and activity.status in ['pending', 'correction', 'overdue', 'in_progress'] and activity.status != 'cancelled' %}
-                                        <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#modalDesistir{{ activity.id }}" title="Cancelar"><i class="fas fa-times"></i></button>
-                                    {% endif %}
+                                        {% if activity.created_by_id and current_user.id == activity.created_by_id and activity.status in ['pending', 'correction', 'overdue', 'in_progress'] and activity.status != 'cancelled' %}
+                                            <button type="button" class="btn btn-sm btn-danger py-0 px-1" data-bs-toggle="modal" data-bs-target="#modalDesistir{{ activity.id }}" title="Cancelar"><i class="fas fa-times"></i></button>
+                                        {% endif %}
+                                    </div>
                                 </td>
                             </tr>
                             <!-- Modal Aceitar -->
@@ -107,7 +138,7 @@
                                   </div>
                                   <div class="modal-footer">
                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                    <form method="POST" action="{{ url_for('main.aceitar_atividade', atividade_id=activity.id) }}" style="display:inline;">
+                                    <form method="POST" action="{{ url_for('main.aprovar_atividade', atividade_id=activity.id) }}" style="display:inline;">
                                       <button type="submit" class="btn btn-success">Aceitar</button>
                                     </form>
                                   </div>
@@ -239,7 +270,7 @@
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="8" class="text-center">Nenhuma atividade encontrada</td>
+                                <td colspan="7" class="text-center">Nenhuma atividade encontrada</td>
                             </tr>
                         {% endif %}
                     </tbody>
@@ -247,7 +278,7 @@
             </div>
             {% if total_pages > 1 %}
             <nav aria-label="Paginação de atividades">
-                <ul class="pagination justify-content-end mt-3">
+                <ul class="pagination justify-content-center mt-3">
                     <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
                         <a class="page-link" href="?page={{ current_page - 1 }}" tabindex="-1">Anterior</a>
                     </li>
