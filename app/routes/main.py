@@ -737,6 +737,33 @@ def updates():
         .all())
     return render_template('main/updates.html', messages=messages, current_date=datetime.now().date())
 
+@main.route('/atividade/<int:atividade_id>/enviar-verificacao', methods=['POST'])
+def enviar_verificacao_atividade(atividade_id):
+    """Rota pública para enviar atividade para verificação"""
+    atividade = Activity.query.get_or_404(atividade_id)
+    
+    # Verificar se a atividade pode ser enviada para verificação
+    if atividade.status not in ['in_progress', 'overdue']:
+        return jsonify({'success': False, 'message': 'Apenas atividades em andamento ou atrasadas podem ser enviadas para verificação.'})
+    
+    # Mudar status para completed (em verificação)
+    atividade.status = 'completed'
+    db.session.commit()
+    
+    # Enviar notificação para o supervisor se existir
+    if atividade.property and atividade.property.supervisor_id:
+        msg = Message(
+            receiver_id=atividade.property.supervisor_id,
+            sender_id=atividade.responsible_id,
+            subject='Atividade enviada para verificação',
+            body=f'A atividade "{atividade.title}" foi enviada para verificação por {atividade.responsible.name}.',
+            read=False
+        )
+        db.session.add(msg)
+        db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'Atividade enviada para verificação com sucesso!'})
+
 @main.route('/atividade/<int:atividade_id>/solicitar-correcao', methods=['POST'])
 @login_required
 def solicitar_correcao_atividade(atividade_id):
@@ -1552,3 +1579,93 @@ def exportar_pdf():
         print(f"Erro ao gerar PDF: {e}")
         flash('Erro ao gerar o PDF. Verifique se há dados válidos para os filtros selecionados.', 'error')
         return redirect(url_for('main.archive')) 
+
+@main.route('/public')
+def public_view():
+    """Página pública para visualizar atividades por responsável"""
+    # Obter todos os responsáveis ativos
+    responsaveis = User.query.filter_by(is_active=True, role='user').all()
+    
+    # Obter responsável selecionado
+    responsavel_id = request.args.get('responsavel', type=int)
+    
+    # Configuração da paginação
+    page = request.args.get('page', 1, type=int)
+    per_page = 10  # 10 atividades por página
+    
+    atividades = []
+    responsavel_selecionado = None
+    pagination = None
+    
+    if responsavel_id:
+        responsavel_selecionado = User.query.get(responsavel_id)
+        if responsavel_selecionado:
+            # Buscar todas as atividades do responsável (excluindo realizadas, não realizadas e canceladas)
+            todas_atividades = Activity.query.filter(
+                Activity.responsible_id == responsavel_id,
+                Activity.status.notin_(['done', 'not_completed', 'cancelled'])
+            ).all()
+            
+            # Ordenar atividades conforme ordem solicitada
+            def sort_key(atividade):
+                # Prioridade 1: atrasadas (overdue)
+                if atividade.status == 'overdue':
+                    return (0, atividade.created_at)
+                # Prioridade 2: correção (correction)
+                elif atividade.status == 'correction':
+                    return (1, atividade.created_at)
+                # Prioridade 3: em andamento (in_progress)
+                elif atividade.status == 'in_progress':
+                    return (2, atividade.created_at)
+                # Prioridade 4: em verificação (completed)
+                elif atividade.status == 'completed':
+                    return (3, atividade.created_at)
+                # Outros status
+                else:
+                    return (4, atividade.created_at)
+            
+            todas_atividades.sort(key=sort_key, reverse=True)
+            
+            # Aplicar paginação
+            total_atividades = len(todas_atividades)
+            total_pages = (total_atividades + per_page - 1) // per_page
+            
+            # Garantir que a página está dentro dos limites
+            if page < 1:
+                page = 1
+            elif page > total_pages and total_pages > 0:
+                page = total_pages
+            
+            # Calcular índices de início e fim
+            start_idx = (page - 1) * per_page
+            end_idx = start_idx + per_page
+            
+            # Obter atividades da página atual
+            atividades = todas_atividades[start_idx:end_idx]
+            
+            # Criar objeto de paginação
+            class Pagination:
+                def __init__(self, page, per_page, total, items):
+                    self.page = page
+                    self.per_page = per_page
+                    self.total = total
+                    self.items = items
+                    self.pages = total_pages
+                    self.has_prev = page > 1
+                    self.has_next = page < total_pages
+                    self.prev_num = page - 1
+                    self.next_num = page + 1
+            
+            pagination = Pagination(page, per_page, total_atividades, atividades)
+    
+    return render_template(
+        'main/public.html',
+        responsaveis=responsaveis,
+        responsavel_selecionado=responsavel_selecionado,
+        atividades=atividades,
+        pagination=pagination,
+        prazo_humano=prazo_humano,
+        current_date=datetime.now().date(),
+        translate_status=translate_status,
+        get_status_class=get_status_class
+    )
