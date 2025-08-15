@@ -513,7 +513,7 @@ def desistir_atividade(atividade_id):
     # Permite que responsável ou supervisor desista da atividade
     if atividade.responsible_id != current_user.id and current_user.role != 'supervisor':
         abort(403)
-    if atividade.status in ['pending', 'in_progress']:
+    if atividade.status in ['pending', 'in_progress', 'overdue']:
         cancellation_reason = request.form.get('cancellation_reason', '').strip()
         if not cancellation_reason:
             flash('É obrigatório informar o motivo do cancelamento.', 'danger')
@@ -561,6 +561,7 @@ def aprovar_atividade(atividade_id):
         abort(403)
     atividade = Activity.query.get_or_404(atividade_id)
     if atividade.status == 'completed':
+        # Aprovar atividade em verificação
         atividade.status = 'done'
         atividade.approved_by_id = current_user.id
         db.session.commit()
@@ -587,8 +588,35 @@ def aprovar_atividade(atividade_id):
         
         db.session.commit()
         flash('Atividade aprovada com sucesso!', 'success')
+    elif atividade.status in ['pending', 'correction', 'overdue']:
+        # Aceitar atividade pendente, em correção ou atrasada
+        atividade.status = 'in_progress'
+        db.session.commit()
+        # Mensagem para o responsável
+        msg = Message(
+            receiver_id=atividade.responsible_id,
+            sender_id=current_user.id,
+            subject='Atividade aceita',
+            body=f'{current_user.name} aceitou sua atividade: {atividade.title}',
+            read=False
+        )
+        db.session.add(msg)
+        
+        # Se a atividade tem um supervisor, também envia notificação para ele
+        if atividade.property and atividade.property.supervisor_id:
+            msg_supervisor = Message(
+                receiver_id=atividade.property.supervisor_id,
+                sender_id=current_user.id,
+                subject='Atividade aceita',
+                body=f'{current_user.name} aceitou a atividade "{atividade.title}" que você supervisiona.',
+                read=False
+            )
+            db.session.add(msg_supervisor)
+        
+        db.session.commit()
+        flash('Atividade aceita com sucesso!', 'success')
     else:
-        flash('Apenas atividades EM VERIFICAÇÃO podem ser aprovadas.', 'danger')
+        flash('Apenas atividades pendentes, em correção, atrasadas ou em verificação podem ser aceitas/aprovadas.', 'danger')
     return redirect(url_for('main.approvals'))
 
 @main.route('/recusar-atividade/<int:atividade_id>', methods=['POST'])

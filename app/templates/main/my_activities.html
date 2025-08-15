@@ -113,9 +113,9 @@
                                     <div class="d-flex gap-1 justify-content-center" style="flex-wrap: nowrap;">
                                         <button type="button" class="btn btn-sm btn-info py-0 px-1" data-bs-toggle="modal" data-bs-target="#modalVisualizar{{ activity.id }}" title="Visualizar"><i class="fas fa-eye"></i></button>
                                         {% if activity.responsible and (current_user.id == activity.responsible.id or current_user.role == 'supervisor') %}
-                                            {% if activity.status in ['pending', 'correction', 'overdue'] and activity.status != 'cancelled' %}
+                                            {% if activity.status in ['pending', 'correction'] and activity.status != 'cancelled' %}
                                                 <button type="button" class="btn btn-sm btn-warning py-0 px-1" data-bs-toggle="modal" data-bs-target="#modalAceitar{{ activity.id }}" title="Aceitar"><i class="fas fa-check"></i></button>
-                                            {% elif activity.status == 'in_progress' and activity.status != 'cancelled' %}
+                                            {% elif activity.status in ['in_progress', 'overdue'] and activity.status != 'cancelled' %}
                                                 <button type="button" class="btn btn-sm btn-success py-0 px-1" data-bs-toggle="modal" data-bs-target="#modalConcluir{{ activity.id }}" title="Em Verificação"><i class="fas fa-check-double"></i></button>
                                             {% endif %}
                                         {% endif %}
