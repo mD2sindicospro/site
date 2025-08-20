@@ -40,8 +40,20 @@
     <div class="row">
         <div class="col-12">
             <div class="card shadow mb-4">
-                <div class="card-header py-3 rounded-top text-center">
-                    <h6 class="m-0 font-weight-bold text-white" style="text-transform: uppercase;">LISTA DE ATIVIDADES</h6>
+                <div class="card-header py-3 rounded-top">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="flex-grow-1 text-center">
+                            <h6 class="m-0 font-weight-bold text-white" style="text-transform: uppercase;">LISTA DE ATIVIDADES</h6>
+                        </div>
+                        {% if current_user.role == 'admin' or current_user.role == 'supervisor' %}
+                        <div>
+                            <a href="{{ url_for('activity.import_activities') }}" class="btn btn-outline-light btn-sm">
+                                <i class="fas fa-file-excel me-2"></i>
+                                Importar Excel
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
             <div class="table-responsive">

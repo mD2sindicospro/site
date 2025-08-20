@@ -327,8 +327,14 @@
                             <ul class="dropdown-menu" aria-labelledby="minhasAtividadesDropdown">
                                 <li><a class="dropdown-item" href="{{ url_for('main.my_activities') }}"><i class="fas fa-list"></i> {% if current_user.role == 'supervisor' %}Atividades{% else %}Minhas Atividades{% endif %}</a></li>
                                 <li><a class="dropdown-item" href="{{ url_for('main.archive') }}"><i class="fas fa-archive"></i> Arquivo</a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('main.reports') }}"><i class="fas fa-chart-bar"></i> Relatórios</a></li>
                             </ul>
+                        </li>
+                        {% endif %}
+                        {% if current_user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('main.reports') }}">
+                                <i class="fas fa-chart-bar"></i> Relatórios
+                            </a>
                         </li>
                         {% endif %}
                         {% if current_user.is_admin %}
@@ -339,8 +345,12 @@
                             <ul class="dropdown-menu" aria-labelledby="atividadesDropdown">
                                 <li><a class="dropdown-item" href="{{ url_for('activity.list') }}"><i class="fas fa-tasks"></i> Atividades</a></li>
                                 <li><a class="dropdown-item" href="{{ url_for('main.archive') }}"><i class="fas fa-archive"></i> Arquivo</a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('main.reports') }}"><i class="fas fa-chart-bar"></i> Relatórios</a></li>
                             </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('main.reports') }}">
+                                <i class="fas fa-chart-bar"></i> Relatórios
+                            </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('admin.admin_dashboard') }}">
@@ -348,13 +358,7 @@
                             </a>
                         </li>
                         {% endif %}
-                        {% if current_user.is_authenticated %}
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ url_for('main.updates') }}">
-                                    <i class="fas fa-bell"></i> Atualizações
-                                </a>
-                            </li>
-                        {% endif %}
+                        {# Aba Atualizações removida #}
                     </ul>
                     <ul class="navbar-nav">
                         {% if current_user.is_authenticated and (current_user.is_admin or current_user.is_supervisor) %}

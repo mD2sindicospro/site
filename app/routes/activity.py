@@ -20,6 +20,9 @@ def list():
     if not (current_user.is_admin or current_user.is_supervisor):
         flash('Você não tem permissão para acessar esta página.', 'danger')
         return redirect(url_for('main.home'))
+    
+
+    
     page = request.args.get('page', 1, type=int)
     per_page = 10
     property_id = request.args.get('property', type=int)
@@ -41,10 +44,14 @@ def list():
     # Filtro para não mostrar atividades canceladas, não realizadas ou realizadas
     query = query.filter(~Activity.status.in_(['cancelled', 'not_completed', 'done']))
     total_activities = query.count()
-    total_pages = (total_activities + per_page - 1) // per_page
+    total_pages = max(1, (total_activities + per_page - 1) // per_page)
+    # Garantir que a página atual seja válida
+    page = max(1, min(page, total_pages))
+    
     activities = query.order_by(Activity.created_at.desc()).offset((page - 1) * per_page).limit(per_page).all()
     properties = Property.query.filter_by(is_active=True).all()
     users = User.query.filter_by(is_active=True).all()
+    
     return render_template('activity/list.html', activities=activities, properties=properties, users=users, total_paginas=total_pages, pagina_atual=page, property_id=property_id, responsible_id=responsible_id, status_filter=status)
 
 @activity.route('/create', methods=['GET', 'POST'])

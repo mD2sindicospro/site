@@ -5,19 +5,6 @@
 
 {% block content %}
 <div class="container-fluid">
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 rounded-top text-center d-flex justify-content-between align-items-center">
-            <h6 class="m-0 font-weight-bold text-white" style="text-transform: uppercase;">ATIVIDADES</h6>
-            {% if current_user.is_admin or current_user.is_supervisor %}
-            <div>
-                <a href="{{ url_for('activity.import_activities') }}" class="btn btn-outline-light btn-sm">
-                    <i class="fas fa-file-excel me-2"></i>
-                    Importar Excel
-                </a>
-            </div>
-            {% endif %}
-        </div>
-    </div>
     <div class="row mb-3 justify-content-center" id="filtros-atividades">
         <div class="col-12 col-md-10 col-lg-8">
             <form method="get" class="filtros-form">
@@ -64,7 +51,26 @@
             </form>
         </div>
     </div>
-    <div class="table-responsive">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 rounded-top">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="flex-grow-1 text-center">
+                            <h6 class="m-0 font-weight-bold text-white" style="text-transform: uppercase;">LISTA DE ATIVIDADES</h6>
+                        </div>
+                        {% if current_user.role == 'admin' or current_user.role == 'supervisor' %}
+                        <div>
+                            <a href="{{ url_for('activity.import_activities') }}" class="btn btn-outline-light btn-sm">
+                                <i class="fas fa-file-excel me-2"></i>
+                                Importar Excel
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="table-responsive">
         <table class="table table-bordered text-center align-middle table-atividades" width="100%" cellspacing="0">
             <thead>
                 <tr>
@@ -104,18 +110,34 @@
             </tbody>
         </table>
     </div>
-    {% if total_paginas > 1 %}
+    {% if total_paginas and total_paginas > 1 %}
     <nav aria-label="Paginação de atividades">
         <ul class="pagination justify-content-center mt-3">
-            <li class="page-item {% if pagina_atual == 1 %}disabled{% endif %}">
-                <a class="page-link" href="?page={{ pagina_atual - 1 }}" tabindex="-1">Anterior</a>
+            {% if pagina_atual > 1 %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('activity.list', page=pagina_atual-1, property=property_id, responsible=responsible_id, status=status_filter) }}" tabindex="-1">Anterior</a>
             </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link" tabindex="-1">Anterior</span>
+            </li>
+            {% endif %}
+            
             {% for pagina in range(1, total_paginas + 1) %}
-            <li class="page-item {% if pagina == pagina_atual %}active{% endif %}"><a class="page-link" href="?page={{ pagina }}">{{ pagina }}</a></li>
-            {% endfor %}
-            <li class="page-item {% if pagina_atual == total_paginas %}disabled{% endif %}">
-                <a class="page-link" href="?page={{ pagina_atual + 1 }}">Próxima</a>
+            <li class="page-item {% if pagina == pagina_atual %}active{% endif %}">
+                <a class="page-link" href="{{ url_for('activity.list', page=pagina, property=property_id, responsible=responsible_id, status=status_filter) }}">{{ pagina }}</a>
             </li>
+            {% endfor %}
+            
+            {% if pagina_atual < total_paginas %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('activity.list', page=pagina_atual+1, property=property_id, responsible=responsible_id, status=status_filter) }}">Próxima</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">Próxima</span>
+            </li>
+            {% endif %}
         </ul>
     </nav>
     {% endif %}
@@ -259,6 +281,10 @@
   </div>
 </div>
 {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
 
 <style>
 .table-atividades td, .table-atividades th { padding-top: 0.3em !important; padding-bottom: 0.3em !important; }

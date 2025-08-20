@@ -157,8 +157,8 @@ def home():
     # Get only the 5 most recent activities (no pagination)
     activities = query.order_by(Activity.created_at.desc()).limit(5).all()
 
-    # Buscar as 5 últimas notificações do usuário
-    notifications = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.created_at.desc()).limit(5).all()
+    # Sistema de notificações desativado
+    notifications = []
 
     # Create form for new activity
     new_activity_form = NewActivityForm()
@@ -292,8 +292,8 @@ def home_post():
     total_pages = (total_activities + per_page - 1) // per_page
     activities = activities_query.offset((page - 1) * per_page).limit(per_page).all()
 
-    # Buscar as 5 últimas notificações do usuário
-    notifications = Message.query.filter_by(receiver_id=current_user.id).order_by(Message.created_at.desc()).limit(5).all()
+    # Sistema de notificações desativado
+    notifications = []
 
     # Create form for new activity
     new_activity_form = NewActivityForm()
@@ -671,7 +671,7 @@ def archive():
     new_activity_form.responsible.choices = [(u.id, u.name) for u in users]
 
     page = request.args.get('page', 1, type=int)
-    per_page = 10
+    per_page = 15
     filtro_property = request.args.get('property', type=int)
     filtro_status = request.args.get('status', type=str)
     filtro_supervisor = request.args.get('supervisor', type=int)
@@ -714,7 +714,9 @@ def archive():
 
     atividades_query = atividades_query.order_by(Activity.created_at.desc())
     total_activities = atividades_query.count()
-    total_pages = (total_activities + per_page - 1) // per_page
+    total_pages = max(1, (total_activities + per_page - 1) // per_page)
+    # Garantir que a página atual seja válida
+    page = max(1, min(page, total_pages))
     atividades = atividades_query.offset((page - 1) * per_page).limit(per_page).all()
 
     for a in atividades:
@@ -755,15 +757,7 @@ def archive():
         get_status_class=get_status_class
     )
 
-@main.route('/updates')
-@login_required
-def updates():
-    messages = (Message.query
-        .filter_by(receiver_id=current_user.id)
-        .order_by(Message.created_at.desc())
-        .limit(30)
-        .all())
-    return render_template('main/updates.html', messages=messages, current_date=datetime.now().date())
+# Rota /updates removida - sistema de notificações desativado
 
 @main.route('/atividade/<int:atividade_id>/enviar-verificacao', methods=['POST'])
 def enviar_verificacao_atividade(atividade_id):

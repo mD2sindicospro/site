@@ -192,18 +192,34 @@
                     </tbody>
                 </table>
             </div>
-            {% if total_paginas > 1 %}
+            {% if total_paginas and total_paginas > 1 %}
             <nav aria-label="Paginação de atividades">
                 <ul class="pagination justify-content-center mt-3">
-                    <li class="page-item {% if pagina_atual == 1 %}disabled{% endif %}">
-                        <a class="page-link" href="?pagina={{ pagina_atual - 1 }}{% if request.args.get('property') %}&property={{ request.args.get('property') }}{% endif %}{% if request.args.get('status') %}&status={{ request.args.get('status') }}{% endif %}{% if request.args.get('supervisor') %}&supervisor={{ request.args.get('supervisor') }}{% endif %}{% if request.args.get('data_lancamento_inicio') %}&data_lancamento_inicio={{ request.args.get('data_lancamento_inicio') }}{% endif %}{% if request.args.get('data_lancamento_fim') %}&data_lancamento_fim={{ request.args.get('data_lancamento_fim') }}{% endif %}" tabindex="-1">Anterior</a>
+                    {% if pagina_atual > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('main.archive', page=pagina_atual-1, property=request.args.get('property'), status=request.args.get('status'), supervisor=request.args.get('supervisor'), data_lancamento_inicio=request.args.get('data_lancamento_inicio'), data_lancamento_fim=request.args.get('data_lancamento_fim')) }}" tabindex="-1">Anterior</a>
                     </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link" tabindex="-1">Anterior</span>
+                    </li>
+                    {% endif %}
+                    
                     {% for pagina in range(1, total_paginas + 1) %}
-                    <li class="page-item {% if pagina == pagina_atual %}active{% endif %}"><a class="page-link" href="?pagina={{ pagina }}{% if request.args.get('property') %}&property={{ request.args.get('property') }}{% endif %}{% if request.args.get('status') %}&status={{ request.args.get('status') }}{% endif %}{% if request.args.get('supervisor') %}&supervisor={{ request.args.get('supervisor') }}{% endif %}{% if request.args.get('data_lancamento_inicio') %}&data_lancamento_inicio={{ request.args.get('data_lancamento_inicio') }}{% endif %}{% if request.args.get('data_lancamento_fim') %}&data_lancamento_fim={{ request.args.get('data_lancamento_fim') }}{% endif %}">{{ pagina }}</a></li>
-                    {% endfor %}
-                    <li class="page-item {% if pagina_atual == total_paginas %}disabled{% endif %}">
-                        <a class="page-link" href="?pagina={{ pagina_atual + 1 }}{% if request.args.get('property') %}&property={{ request.args.get('property') }}{% endif %}{% if request.args.get('status') %}&status={{ request.args.get('status') }}{% endif %}{% if request.args.get('supervisor') %}&supervisor={{ request.args.get('supervisor') }}{% endif %}{% if request.args.get('data_lancamento_inicio') %}&data_lancamento_inicio={{ request.args.get('data_lancamento_inicio') }}{% endif %}{% if request.args.get('data_lancamento_fim') %}&data_lancamento_fim={{ request.args.get('data_lancamento_fim') }}{% endif %}">Próxima</a>
+                    <li class="page-item {% if pagina == pagina_atual %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('main.archive', page=pagina, property=request.args.get('property'), status=request.args.get('status'), supervisor=request.args.get('supervisor'), data_lancamento_inicio=request.args.get('data_lancamento_inicio'), data_lancamento_fim=request.args.get('data_lancamento_fim')) }}">{{ pagina }}</a>
                     </li>
+                    {% endfor %}
+                    
+                    {% if pagina_atual < total_paginas %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('main.archive', page=pagina_atual+1, property=request.args.get('property'), status=request.args.get('status'), supervisor=request.args.get('supervisor'), data_lancamento_inicio=request.args.get('data_lancamento_inicio'), data_lancamento_fim=request.args.get('data_lancamento_fim')) }}">Próxima</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Próxima</span>
+                    </li>
+                    {% endif %}
                 </ul>
             </nav>
             {% endif %}
