@@ -1691,3 +1691,93 @@ def public_view():
         translate_status=translate_status,
         get_status_class=get_status_class
     )
+
+@main.route('/links')
+@login_required
+def links():
+    """Página com links para as páginas individuais dos condomínios"""
+    # Parâmetros de paginação
+    page = request.args.get('page', 1, type=int)
+    per_page = 12
+    
+    # Buscar todos os condomínios ativos
+    total_condominios = Property.query.filter_by(is_active=True).count()
+    total_pages = max(1, (total_condominios + per_page - 1) // per_page)
+    
+    # Validar página
+    page = max(1, min(page, total_pages))
+    
+    # Buscar condomínios da página atual
+    offset = (page - 1) * per_page
+    condominios = Property.query.filter_by(is_active=True).order_by(Property.name).offset(offset).limit(per_page).all()
+    
+    # Criar objeto de paginação
+    class Pagination:
+        def __init__(self, page, per_page, total, items):
+            self.page = page
+            self.per_page = per_page
+            self.total = total
+            self.items = items
+            self.pages = total_pages
+            self.has_prev = page > 1
+            self.has_next = page < total_pages
+            self.prev_num = page - 1
+            self.next_num = page + 1
+    
+    pagination = Pagination(page, per_page, total_condominios, condominios)
+    
+    return render_template('main/links.html', condominios=condominios, pagination=pagination)
+
+@main.route('/condominio/<int:property_id>/<string:property_name>')
+@main.route('/condominio/<int:property_id>')
+def condominio_page(property_id, property_name=None):
+    """Página individual do condomínio com atividades dos últimos 30 dias"""
+    # Buscar o condomínio
+    property = Property.query.get_or_404(property_id)
+    
+    # Calcular data de 30 dias atrás
+    data_inicio = datetime.now() - timedelta(days=30)
+    
+    # Buscar atividades do condomínio dos últimos 30 dias
+    atividades = Activity.query.filter(
+        Activity.property_id == property_id,
+        Activity.created_at >= data_inicio
+    ).order_by(Activity.created_at.desc()).all()
+    
+    # Estatísticas
+    total_atividades = len(atividades)
+    atividades_pendentes = len([a for a in atividades if a.status == 'pending'])
+    atividades_em_andamento = len([a for a in atividades if a.status == 'in_progress'])
+    atividades_atrasadas = len([a for a in atividades if a.status == 'overdue'])
+    atividades_em_verificacao = len([a for a in atividades if a.status == 'completed'])
+    atividades_realizadas = len([a for a in atividades if a.status == 'done'])
+    atividades_correcao = len([a for a in atividades if a.status == 'correction'])
+    
+    # Agrupar atividades por responsável
+    atividades_por_responsavel = {}
+    for atividade in atividades:
+        if atividade.responsible:
+            responsavel_nome = atividade.responsible.name
+            if responsavel_nome not in atividades_por_responsavel:
+                atividades_por_responsavel[responsavel_nome] = []
+            atividades_por_responsavel[responsavel_nome].append(atividade)
+    
+    return render_template(
+        'main/condominio_page.html',
+        property=property,
+        atividades=atividades,
+        atividades_por_responsavel=atividades_por_responsavel,
+        total_atividades=total_atividades,
+        atividades_pendentes=atividades_pendentes,
+        atividades_em_andamento=atividades_em_andamento,
+        atividades_atrasadas=atividades_atrasadas,
+        atividades_em_verificacao=atividades_em_verificacao,
+        atividades_realizadas=atividades_realizadas,
+        atividades_correcao=atividades_correcao,
+        data_inicio=data_inicio,
+        data_fim=datetime.now(),
+        current_date=datetime.now().date(),
+        translate_status=translate_status,
+        get_status_class=get_status_class,
+        prazo_humano=prazo_humano
+    )
