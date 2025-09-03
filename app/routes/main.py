@@ -1738,10 +1738,11 @@ def condominio_page(property_id, property_name=None):
     # Calcular data de 30 dias atrás
     data_inicio = datetime.now() - timedelta(days=30)
     
-    # Buscar atividades do condomínio dos últimos 30 dias
+    # Buscar atividades do condomínio dos últimos 30 dias (apenas status permitidos)
     atividades = Activity.query.filter(
         Activity.property_id == property_id,
-        Activity.created_at >= data_inicio
+        Activity.created_at >= data_inicio,
+        Activity.status.in_(['in_progress', 'done', 'overdue', 'completed'])
     ).order_by(Activity.created_at.desc()).all()
     
     # Estatísticas
