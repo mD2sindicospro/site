@@ -31,8 +31,9 @@
                         <option value="completed" {% if request.args.get('status') == 'completed' %}selected{% endif %}>EM VERIFICAÇÃO</option>
                     </select>
                 </div>
-                <div>
+                <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary">Filtrar</button>
+                    <a href="{{ url_for('main.my_activities') }}" class="btn btn-secondary">Limpar</a>
                 </div>
             </form>
         </div>
@@ -151,6 +152,15 @@
                                   <div class="modal-footer">
                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                                     <form method="POST" action="{{ url_for('main.aprovar_atividade', atividade_id=activity.id) }}" style="display:inline;">
+                                      {% if 'property' in request.args %}
+                                        <input type="hidden" name="preserve_property" value="{{ request.args.get('property', '') }}">
+                                      {% endif %}
+                                      {% if 'status' in request.args %}
+                                        <input type="hidden" name="preserve_status" value="{{ request.args.get('status', '') }}">
+                                      {% endif %}
+                                      {% if 'page' in request.args %}
+                                        <input type="hidden" name="preserve_page" value="{{ request.args.get('page', '') }}">
+                                      {% endif %}
                                       <button type="submit" class="btn btn-success">Aceitar</button>
                                     </form>
                                   </div>
@@ -171,6 +181,15 @@
                                   <div class="modal-footer">
                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                                     <form method="POST" action="{{ url_for('main.concluir_atividade', atividade_id=activity.id) }}" style="display:inline;">
+                                      {% if 'property' in request.args %}
+                                        <input type="hidden" name="preserve_property" value="{{ request.args.get('property', '') }}">
+                                      {% endif %}
+                                      {% if 'status' in request.args %}
+                                        <input type="hidden" name="preserve_status" value="{{ request.args.get('status', '') }}">
+                                      {% endif %}
+                                      {% if 'page' in request.args %}
+                                        <input type="hidden" name="preserve_page" value="{{ request.args.get('page', '') }}">
+                                      {% endif %}
                                       <button type="submit" class="btn btn-success">Em Verificação</button>
                                     </form>
                                   </div>
@@ -182,6 +201,15 @@
                               <div class="modal-dialog modal-dialog-centered">
                                 <div class="modal-content">
                                   <form method="POST" action="{{ url_for('main.desistir_atividade', atividade_id=activity.id) }}">
+                                    {% if 'property' in request.args %}
+                                      <input type="hidden" name="preserve_property" value="{{ request.args.get('property', '') }}">
+                                    {% endif %}
+                                    {% if 'status' in request.args %}
+                                      <input type="hidden" name="preserve_status" value="{{ request.args.get('status', '') }}">
+                                    {% endif %}
+                                    {% if 'page' in request.args %}
+                                      <input type="hidden" name="preserve_page" value="{{ request.args.get('page', '') }}">
+                                    {% endif %}
                                     <div class="modal-header">
                                       <h5 class="modal-title" id="modalDesistirLabel{{ activity.id }}">Confirmar Cancelamento</h5>
                                       <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
@@ -291,14 +319,50 @@
             {% if total_pages > 1 %}
             <nav aria-label="Paginação de atividades">
                 <ul class="pagination justify-content-center mt-3">
+                    {% set property_param = request.args.get('property', '') %}
+                    {% set status_param = request.args.get('status', '') %}
                     <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
-                        <a class="page-link" href="?page={{ current_page - 1 }}" tabindex="-1">Anterior</a>
+                        {% if current_page == 1 %}
+                            <span class="page-link" tabindex="-1">Anterior</span>
+                        {% else %}
+                            {% set params = [] %}
+                            {% if property_param %}
+                                {% set _ = params.append('property=' + property_param|string) %}
+                            {% endif %}
+                            {% if status_param %}
+                                {% set _ = params.append('status=' + status_param) %}
+                            {% endif %}
+                            {% set _ = params.append('page=' + (current_page - 1)|string) %}
+                            <a class="page-link" href="?{{ params|join('&') }}" tabindex="-1">Anterior</a>
+                        {% endif %}
                     </li>
                     {% for pagina in range(1, total_pages + 1) %}
-                    <li class="page-item {% if pagina == current_page %}active{% endif %}"><a class="page-link" href="?page={{ pagina }}">{{ pagina }}</a></li>
+                    <li class="page-item {% if pagina == current_page %}active{% endif %}">
+                        {% set params = [] %}
+                        {% if property_param %}
+                            {% set _ = params.append('property=' + property_param|string) %}
+                        {% endif %}
+                        {% if status_param %}
+                            {% set _ = params.append('status=' + status_param) %}
+                        {% endif %}
+                        {% set _ = params.append('page=' + pagina|string) %}
+                        <a class="page-link" href="?{{ params|join('&') }}">{{ pagina }}</a>
+                    </li>
                     {% endfor %}
                     <li class="page-item {% if current_page == total_pages %}disabled{% endif %}">
-                        <a class="page-link" href="?page={{ current_page + 1 }}">Próxima</a>
+                        {% if current_page == total_pages %}
+                            <span class="page-link">Próxima</span>
+                        {% else %}
+                            {% set params = [] %}
+                            {% if property_param %}
+                                {% set _ = params.append('property=' + property_param|string) %}
+                            {% endif %}
+                            {% if status_param %}
+                                {% set _ = params.append('status=' + status_param) %}
+                            {% endif %}
+                            {% set _ = params.append('page=' + (current_page + 1)|string) %}
+                            <a class="page-link" href="?{{ params|join('&') }}">Próxima</a>
+                        {% endif %}
                     </li>
                 </ul>
             </nav>

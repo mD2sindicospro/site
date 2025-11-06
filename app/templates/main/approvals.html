@@ -27,7 +27,9 @@
                         <td>{{ activity.property.name if activity.property else '—' }}</td>
                         <td>{% if activity.created_at %}{{ activity.created_at.strftime('%d/%m/%y') }}{% else %}—{% endif %}</td>
                         <td>{{ activity.responsible.name if activity.responsible else '—' }}</td>
-                        <td>{{ activity.title }}</td>
+                        <td class="text-nowrap" style="max-width: 250px;">
+                            <div class="text-truncate" style="max-width: 100%; display: inline-block;" title="{{ activity.title }}">{{ activity.title }}</div>
+                        </td>
                         <td>{% if activity.delivery_date %}{{ activity.delivery_date.strftime('%d/%m/%y') }}{% else %}—{% endif %}</td>
                         <td>
                             <span class="badge {{ get_status_class(activity.status) }}">
@@ -35,10 +37,12 @@
                             </span>
                         </td>
                         <td>
-                            <button type="button" class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#modalVisualizar{{ activity.id }}" title="Visualize"><i class="fas fa-eye"></i></button>
-                            <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalAprovar{{ activity.id }}" title="Approve"><i class="fas fa-check"></i></button>
-                            <button type="button" class="btn btn-warning btn-sm" style="background-color: #ffc107 !important; border-color: #ffc107 !important; color: #212529 !important;" data-bs-toggle="modal" data-bs-target="#modalCorrecao{{ activity.id }}" title="Request Correction"><i class="fas fa-exclamation-circle"></i></button>
-                            <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#modalRecusar{{ activity.id }}" title="Reject"><i class="fas fa-times"></i></button>
+                            <div class="d-flex gap-1 justify-content-center" style="flex-wrap: nowrap;">
+                                <button type="button" class="btn btn-info btn-sm py-0 px-1" data-bs-toggle="modal" data-bs-target="#modalVisualizar{{ activity.id }}" title="Visualizar"><i class="fas fa-eye"></i></button>
+                                <button type="button" class="btn btn-success btn-sm py-0 px-1" data-bs-toggle="modal" data-bs-target="#modalAprovar{{ activity.id }}" title="Aprovar"><i class="fas fa-check"></i></button>
+                                <button type="button" class="btn btn-warning btn-sm py-0 px-1" style="background-color: #ffc107 !important; border-color: #ffc107 !important; color: #212529 !important;" data-bs-toggle="modal" data-bs-target="#modalCorrecao{{ activity.id }}" title="Solicitar Correção"><i class="fas fa-exclamation-circle"></i></button>
+                                <button type="button" class="btn btn-danger btn-sm py-0 px-1" data-bs-toggle="modal" data-bs-target="#modalRecusar{{ activity.id }}" title="Rejeitar"><i class="fas fa-times"></i></button>
+                            </div>
                         </td>
                     </tr>
                     <!-- Modal Visualizar Atividade -->
@@ -210,5 +214,48 @@
 .badge-status-overdue { background: #e74c3c !important; color: #fff; }
 .badge-status-done { background: #218838 !important; color: #fff; }
 .badge-status-cancelled { background: #8b0000 !important; color: #fff; }
+
+/* Estilos para botões de ação na tabela */
+.table-atividades td {
+    padding: 0.5rem 0.75rem !important;
+    vertical-align: middle !important;
+}
+
+.table-atividades .btn-sm.py-0 {
+    line-height: 1;
+    font-size: 0.8rem;
+    min-height: auto;
+    height: auto;
+    padding: 0.25rem 0.4rem !important;
+}
+
+.table-atividades .btn-sm.py-0 i {
+    font-size: 0.85rem;
+}
+
+/* Truncamento de texto na coluna Atividade */
+.table-atividades td.text-nowrap {
+    max-width: 250px;
+    overflow: hidden;
+}
+
+.table-atividades td .text-truncate {
+    max-width: 100%;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: inline-block !important;
+    width: 100%;
+}
+
+/* Redução de fonte para cabeçalho e dados da tabela */
+.table-atividades th {
+    font-size: 0.85rem !important;
+    font-weight: 600;
+}
+
+.table-atividades td {
+    font-size: 0.85rem !important;
+}
 </style>
 {% endblock %} 

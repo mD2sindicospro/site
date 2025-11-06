@@ -23,10 +23,73 @@ from reportlab.lib.styles import getSampleStyleSheet
 from unidecode import unidecode
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from reportlab.lib.styles import ParagraphStyle
+from urllib.parse import urlparse, parse_qs
 import os
 # import psutil  # Temporarily disabled
 
 main = Blueprint('main', __name__)
+
+def preserve_filters_url(base_url, **kwargs):
+    """Preserva os parâmetros de filtro da requisição atual ao construir uma URL"""
+    filter_property = None
+    filter_status = None
+    page = None
+    
+    # Prioridade 1: Tenta pegar dos query params (GET)
+    filter_property = request.args.get('property', type=int) or None
+    filter_status = request.args.get('status', type=str) or None
+    page = request.args.get('page', type=int) or None
+    
+    # Prioridade 2: Se não encontrou nos args, tenta pegar do form (POST com hidden fields)
+    if not filter_property:
+        form_prop = request.form.get('preserve_property', '').strip()
+        if form_prop:
+            try:
+                filter_property = int(form_prop)
+            except (ValueError, TypeError):
+                pass
+    
+    if not filter_status:
+        form_status = request.form.get('preserve_status', '').strip()
+        if form_status:
+            filter_status = form_status
+    
+    if not page:
+        form_page = request.form.get('preserve_page', '').strip()
+        if form_page:
+            try:
+                page = int(form_page)
+            except (ValueError, TypeError):
+                pass
+    
+    # Prioridade 3: Se ainda não encontrou, tenta pegar do referrer (URL anterior)
+    if (not filter_property and not filter_status) and request.referrer:
+        try:
+            parsed = urlparse(request.referrer)
+            query_params = parse_qs(parsed.query)
+            if 'property' in query_params and query_params['property'] and not filter_property:
+                filter_property = int(query_params['property'][0])
+            if 'status' in query_params and query_params['status'] and not filter_status:
+                filter_status = query_params['status'][0]
+            if 'page' in query_params and query_params['page'] and not page:
+                page = int(query_params['page'][0])
+        except (ValueError, KeyError, IndexError, TypeError):
+            pass
+    
+    url = url_for(base_url, **kwargs)
+    params = []
+    
+    if filter_property:
+        params.append(f'property={filter_property}')
+    if filter_status and filter_status.strip():
+        params.append(f'status={filter_status}')
+    if page and page > 1:
+        params.append(f'page={page}')
+    
+    if params:
+        url += '?' + '&'.join(params)
+    
+    return url
 
 @main.route('/')
 def landing():
@@ -504,7 +567,7 @@ def concluir_atividade(atividade_id):
         db.session.rollback()
         flash('Erro ao concluir atividade. Tente novamente.', 'danger')
     
-    return redirect(url_for('main.my_activities'))
+    return redirect(preserve_filters_url('main.my_activities'))
 
 @main.route('/atividade/<int:atividade_id>/desistir', methods=['POST'])
 @login_required
@@ -517,7 +580,7 @@ def desistir_atividade(atividade_id):
         cancellation_reason = request.form.get('cancellation_reason', '').strip()
         if not cancellation_reason:
             flash('É obrigatório informar o motivo do cancelamento.', 'danger')
-            return redirect(url_for('main.my_activities'))
+            return redirect(preserve_filters_url('main.my_activities'))
         atividade.status = 'cancelled'
         atividade.cancellation_reason = cancellation_reason
         db.session.commit()
@@ -532,7 +595,7 @@ def desistir_atividade(atividade_id):
         db.session.add(msg)
         db.session.commit()
         flash('Atividade cancelada com sucesso.', 'success')
-    return redirect(url_for('main.my_activities'))
+    return redirect(preserve_filters_url('main.my_activities'))
 
 @main.route('/approvals')
 @login_required
@@ -617,7 +680,15 @@ def aprovar_atividade(atividade_id):
         flash('Atividade aceita com sucesso!', 'success')
     else:
         flash('Apenas atividades pendentes, em correção, atrasadas ou em verificação podem ser aceitas/aprovadas.', 'danger')
-    return redirect(url_for('main.approvals'))
+    
+    # Verificar de onde veio a requisição para redirecionar corretamente
+    referrer = request.referrer or ''
+    if '/minhas-atividades' in referrer:
+        # Se veio de minhas atividades, volta para lá preservando filtros
+        return redirect(preserve_filters_url('main.my_activities'))
+    else:
+        # Caso contrário, vai para aprovações
+        return redirect(url_for('main.approvals'))
 
 @main.route('/recusar-atividade/<int:atividade_id>', methods=['POST'])
 @login_required
