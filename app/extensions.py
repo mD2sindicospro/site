@@ -2,12 +2,14 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_bcrypt import Bcrypt
+from flask_wtf import CSRFProtect
 
 # Inicialização das extensões
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
 bcrypt = Bcrypt()
+csrf = CSRFProtect()
 
 def init_extensions(app):
     """Inicializa todas as extensões do Flask."""
@@ -15,6 +17,7 @@ def init_extensions(app):
     migrate.init_app(app, db)
     login_manager.init_app(app)
     bcrypt.init_app(app)
+    csrf.init_app(app)
 
     # Configuração do login
     login_manager.login_view = 'auth.login'
