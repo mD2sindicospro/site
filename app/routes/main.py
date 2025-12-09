@@ -690,6 +690,65 @@ def aprovar_atividade(atividade_id):
         # Caso contrário, vai para aprovações
         return redirect(url_for('main.approvals'))
 
+@main.route('/aprovar-atividades', methods=['POST'])
+@login_required
+def aprovar_atividades_bulk():
+    if not hasattr(current_user, 'role') or current_user.role not in ['admin', 'supervisor']:
+        abort(403)
+
+    raw_ids = request.form.getlist('atividade_ids')
+    try:
+        ids = [int(x) for x in raw_ids]
+    except (TypeError, ValueError):
+        ids = []
+    if not ids:
+        flash('Selecione pelo menos uma atividade para aprovar.', 'warning')
+        return redirect(url_for('main.approvals'))
+
+    try:
+        activities = Activity.query.filter(Activity.id.in_(ids)).all()
+        aprovadas = 0
+
+        for atividade in activities:
+            if atividade.status != 'completed':
+                continue
+
+            atividade.status = 'done'
+            atividade.approved_by_id = current_user.id
+            aprovadas += 1
+
+            msg = Message(
+                receiver_id=atividade.responsible_id,
+                sender_id=current_user.id,
+                subject='Atividade aprovada',
+                body=f'{current_user.name} aprovou sua atividade: {atividade.title}',
+                read=False
+            )
+            db.session.add(msg)
+
+            if atividade.property and atividade.property.supervisor_id:
+                msg_supervisor = Message(
+                    receiver_id=atividade.property.supervisor_id,
+                    sender_id=current_user.id,
+                    subject='Atividade aprovada',
+                    body=f'{current_user.name} aprovou a atividade "{atividade.title}" que você supervisiona.',
+                    read=False
+                )
+                db.session.add(msg_supervisor)
+
+        if aprovadas:
+            db.session.commit()
+            flash(f'{aprovadas} atividade(s) aprovada(s) com sucesso!', 'success')
+        else:
+            db.session.rollback()
+            flash('Nenhuma atividade em verificação para aprovar.', 'warning')
+    except Exception as e:
+        current_app.logger.error(f'Erro na aprovação em massa: {str(e)}')
+        db.session.rollback()
+        flash('Erro ao aprovar atividades. Tente novamente.', 'danger')
+
+    return redirect(url_for('main.approvals'))
+
 @main.route('/recusar-atividade/<int:atividade_id>', methods=['POST'])
 @login_required
 def recusar_atividade(atividade_id):

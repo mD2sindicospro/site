@@ -7,44 +7,61 @@
             <h6 class="m-0 font-weight-bold text-white" style="text-transform: uppercase;">APROVAÇÕES PENDENTES</h6>
         </div>
     </div>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex align-items-center gap-2">
+            <input type="checkbox" id="select-all" class="form-check-input">
+            <label for="select-all" class="mb-0 fw-semibold">Selecionar todos</label>
+        </div>
+        <button id="btn-approve-selected" type="button" class="btn btn-success btn-sm" disabled>
+            <i class="fas fa-check me-1"></i> Aprovar selecionados
+        </button>
+    </div>
     <div class="table-responsive">
-        <table class="table table-bordered text-center align-middle table-atividades" width="100%" cellspacing="0">
-            <thead>
-                <tr>
-                    <th>Condomínio</th>
-                    <th>Lançamento</th>
-                    <th>Responsável</th>
-                    <th>Atividade</th>
-                    <th>Entregar até</th>
-                    <th>Status</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% if atividades %}
-                    {% for activity in atividades %}
+        <form id="bulk-approve-form" method="POST" action="{{ url_for('main.aprovar_atividades_bulk') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <table class="table table-bordered text-center align-middle table-atividades" width="100%" cellspacing="0">
+                <thead>
                     <tr>
-                        <td>{{ activity.property.name if activity.property else '—' }}</td>
-                        <td>{% if activity.created_at %}{{ activity.created_at.strftime('%d/%m/%y') }}{% else %}—{% endif %}</td>
-                        <td>{{ activity.responsible.name if activity.responsible else '—' }}</td>
-                        <td class="text-nowrap" style="max-width: 250px;">
-                            <div class="text-truncate" style="max-width: 100%; display: inline-block;" title="{{ activity.title }}">{{ activity.title }}</div>
-                        </td>
-                        <td>{% if activity.delivery_date %}{{ activity.delivery_date.strftime('%d/%m/%y') }}{% else %}—{% endif %}</td>
-                        <td>
-                            <span class="badge {{ get_status_class(activity.status) }}">
-                                {{ translate_status(activity.status).upper() }}
-                            </span>
-                        </td>
-                        <td>
-                            <div class="d-flex gap-1 justify-content-center" style="flex-wrap: nowrap;">
-                                <button type="button" class="btn btn-info btn-sm py-0 px-1" data-bs-toggle="modal" data-bs-target="#modalVisualizar{{ activity.id }}" title="Visualizar"><i class="fas fa-eye"></i></button>
-                                <button type="button" class="btn btn-success btn-sm py-0 px-1" data-bs-toggle="modal" data-bs-target="#modalAprovar{{ activity.id }}" title="Aprovar"><i class="fas fa-check"></i></button>
-                                <button type="button" class="btn btn-warning btn-sm py-0 px-1" style="background-color: #ffc107 !important; border-color: #ffc107 !important; color: #212529 !important;" data-bs-toggle="modal" data-bs-target="#modalCorrecao{{ activity.id }}" title="Solicitar Correção"><i class="fas fa-exclamation-circle"></i></button>
-                                <button type="button" class="btn btn-danger btn-sm py-0 px-1" data-bs-toggle="modal" data-bs-target="#modalRecusar{{ activity.id }}" title="Rejeitar"><i class="fas fa-times"></i></button>
-                            </div>
-                        </td>
+                        <th style="width:36px;">
+                            <!-- Checkbox geral já está acima; esta coluna é para seleção por linha -->
+                        </th>
+                        <th>Condomínio</th>
+                        <th>Lançamento</th>
+                        <th>Responsável</th>
+                        <th>Atividade</th>
+                        <th>Entregar até</th>
+                        <th>Status</th>
+                        <th>Ações</th>
                     </tr>
+                </thead>
+                <tbody>
+                    {% if atividades %}
+                        {% for activity in atividades %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="form-check-input activity-checkbox" name="atividade_ids" value="{{ activity.id }}">
+                            </td>
+                            <td>{{ activity.property.name if activity.property else '—' }}</td>
+                            <td>{% if activity.created_at %}{{ activity.created_at.strftime('%d/%m/%y') }}{% else %}—{% endif %}</td>
+                            <td>{{ activity.responsible.name if activity.responsible else '—' }}</td>
+                            <td class="text-nowrap" style="max-width: 250px;">
+                                <div class="text-truncate" style="max-width: 100%; display: inline-block;" title="{{ activity.title }}">{{ activity.title }}</div>
+                            </td>
+                            <td>{% if activity.delivery_date %}{{ activity.delivery_date.strftime('%d/%m/%y') }}{% else %}—{% endif %}</td>
+                            <td>
+                                <span class="badge {{ get_status_class(activity.status) }}">
+                                    {{ translate_status(activity.status).upper() }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="d-flex gap-1 justify-content-center" style="flex-wrap: nowrap;">
+                                    <button type="button" class="btn btn-info btn-sm py-0 px-1" data-bs-toggle="modal" data-bs-target="#modalVisualizar{{ activity.id }}" title="Visualizar"><i class="fas fa-eye"></i></button>
+                                    <button type="button" class="btn btn-success btn-sm py-0 px-1" data-bs-toggle="modal" data-bs-target="#modalAprovar{{ activity.id }}" title="Aprovar"><i class="fas fa-check"></i></button>
+                                    <button type="button" class="btn btn-warning btn-sm py-0 px-1" style="background-color: #ffc107 !important; border-color: #ffc107 !important; color: #212529 !important;" data-bs-toggle="modal" data-bs-target="#modalCorrecao{{ activity.id }}" title="Solicitar Correção"><i class="fas fa-exclamation-circle"></i></button>
+                                    <button type="button" class="btn btn-danger btn-sm py-0 px-1" data-bs-toggle="modal" data-bs-target="#modalRecusar{{ activity.id }}" title="Rejeitar"><i class="fas fa-times"></i></button>
+                                </div>
+                            </td>
+                        </tr>
                     <!-- Modal Visualizar Atividade -->
                     <div class="modal fade" id="modalVisualizar{{ activity.id }}" tabindex="-1" aria-labelledby="modalVisualizarLabel{{ activity.id }}" aria-hidden="true">
                       <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -191,13 +208,14 @@
                       </div>
                     </div>
                     {% endfor %}
-                {% else %}
-                    <tr>
-                        <td colspan="7" class="text-center">Nenhuma atividade aguardando aprovação.</td>
-                    </tr>
-                {% endif %}
-            </tbody>
-        </table>
+                    {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center">Nenhuma atividade aguardando aprovação.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </form>
     </div>
 </div>
 <style>
@@ -258,4 +276,38 @@
     font-size: 0.85rem !important;
 }
 </style>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const selectAll = document.getElementById('select-all');
+    const checkboxes = Array.from(document.querySelectorAll('.activity-checkbox'));
+    const btnApprove = document.getElementById('btn-approve-selected');
+    const form = document.getElementById('bulk-approve-form');
+
+    function refreshButton() {
+        if (!btnApprove) return;
+        const anyChecked = checkboxes.some(cb => cb.checked);
+        btnApprove.disabled = !anyChecked;
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', () => {
+            checkboxes.forEach(cb => cb.checked = selectAll.checked);
+            refreshButton();
+        });
+    }
+
+    checkboxes.forEach(cb => cb.addEventListener('change', refreshButton));
+
+    if (btnApprove && form) {
+        btnApprove.addEventListener('click', () => {
+            const selected = checkboxes.filter(cb => cb.checked);
+            if (!selected.length) return;
+            const ok = confirm(`Aprovar ${selected.length} atividade(s)?`);
+            if (ok) {
+                form.submit();
+            }
+        });
+    }
+});
+</script>
 {% endblock %} 
