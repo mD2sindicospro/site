@@ -26,9 +26,18 @@ def init_extensions(app):
 
     # Carrega o usuário para o Flask-Login
     from app.models.user import User
+    from sqlalchemy.exc import OperationalError
     @login_manager.user_loader
     def load_user(user_id):
-        return User.query.get(int(user_id))
+        try:
+            return User.query.get(int(user_id))
+        except OperationalError:
+            # Se a conexão falhar, tenta reconectar
+            db.session.rollback()
+            try:
+                return User.query.get(int(user_id))
+            except Exception:
+                return None
 
     # Importa os modelos na ordem correta de dependência
     with app.app_context():

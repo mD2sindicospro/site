@@ -28,6 +28,11 @@ class Config:
         'max_overflow': 20,
         'pool_timeout': 30,
         'pool_recycle': 1800,
+        'pool_pre_ping': True,  # Verifica conexão antes de usar
+        'connect_args': {
+            'connect_timeout': 10,
+            'sslmode': 'require',
+        } if DATABASE_URL and 'postgresql' in DATABASE_URL else {}
     }
     
     # Configurações de segurança

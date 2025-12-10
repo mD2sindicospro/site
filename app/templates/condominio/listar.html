@@ -500,7 +500,6 @@ document.addEventListener('DOMContentLoaded', function() {
             var administradorEmail = button.getAttribute('data-administrator-email') || '-';
             var logoUrl = button.getAttribute('data-logo-url') || '';
 
-            // Exibir logo se existir
             var logoContainer = document.getElementById('view_logo_container');
             if (logoUrl) {
                 logoContainer.innerHTML = '<img src="' + logoUrl + '" alt="Logo do condomínio" class="img-fluid" style="width: 200px; height: 120px; object-fit: contain;">';

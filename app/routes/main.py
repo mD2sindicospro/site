@@ -24,6 +24,9 @@ from unidecode import unidecode
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from reportlab.lib.styles import ParagraphStyle
 from urllib.parse import urlparse, parse_qs
+from urllib.request import urlopen, Request
+from urllib.error import URLError
+import tempfile
 import os
 # import psutil  # Temporarily disabled
 
@@ -1537,17 +1540,75 @@ def exportar_pdf():
                                alignment=TA_LEFT, fontSize=12, fontName='Helvetica',
                                textColor=empresa_blue, spaceAfter=20, spaceBefore=10)
     
+    temp_files = []  # lista de temporários para limpar ao final
+
+    # Função auxiliar para carregar imagem (local ou externa)
+    def get_logo_image(logo_url):
+        """Tenta carregar imagem do logo (url externa, caminho absoluto ou relativo a /static).
+        Retorna (path, is_temp) ou (None, False) se falhar.
+        """
+        if not logo_url:
+            return None, False
+        
+        try:
+            # URL externa: faz download temporário com user-agent para evitar bloqueio
+            if logo_url.startswith('http://') or logo_url.startswith('https://'):
+                try:
+                    req = Request(logo_url, headers={'User-Agent': 'Mozilla/5.0'})
+                    with urlopen(req, timeout=5) as response:
+                        img_data = response.read()
+                    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
+                    temp_file.write(img_data)
+                    temp_file.close()
+                    temp_files.append(temp_file.name)
+                    return temp_file.name, True
+                except (URLError, Exception) as e:
+                    current_app.logger.warning(f"Erro ao carregar logo externo: {str(e)}")
+                    return None, False
+            # Caminho relativo ao /static (ex.: '/static/uploads/logo.png')
+            elif logo_url.startswith('/'):
+                local_path = os.path.join(current_app.root_path, logo_url.lstrip('/'))
+                if os.path.exists(local_path):
+                    return local_path, False
+                return None, False
+            else:
+                # Caminho absoluto no disco
+                if os.path.exists(logo_url):
+                    return logo_url, False
+                return None, False
+        except Exception as e:
+            current_app.logger.warning(f"Erro ao processar logo: {str(e)}")
+            return None, False
+    
     # Função para criar cabeçalho fixo
     def create_header(canvas, doc):
         canvas.saveState()
+        
+        # Preparar logo MD2 (caminho corrigido para dentro de app/static/images)
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+        logo_md2_path = os.path.join(base_dir, 'static', 'images', 'logo.png')
+        logo_md2_html = ''
+        if os.path.exists(logo_md2_path):
+            logo_md2_html = f'<img src="{logo_md2_path}" width="3.5cm" height="1.8cm" valign="middle"/>'
+        
+        # Preparar logo do condomínio
+        logo_img_path = None
+        logo_html = ''
+        if logo_condominio_url:
+            logo_img_path, _is_temp = get_logo_image(logo_condominio_url)
+            if logo_img_path:
+                try:
+                    logo_html = f'<img src="{logo_img_path}" width="3.5cm" height="1.8cm" valign="middle"/>'
+                except Exception:
+                    logo_html = ''
         
         # Cabeçalho profissional com layout melhorado
         header_data = [
             [
                 # Coluna esquerda - Logo MD2
-                Paragraph('''
+                Paragraph(f'''
                     <para align="left">
-                        <img src="app/static/images/logo.png" width="3.5cm" height="1.8cm" valign="middle"/>
+                        {logo_md2_html}
                     </para>
                 ''', logo_style),
                 
@@ -1563,7 +1624,7 @@ def exportar_pdf():
                 # Coluna direita - Logo do condomínio
                 Paragraph(f'''
                     <para align="right">
-                        {f'<img src="{logo_condominio_url}" width="3.5cm" height="1.8cm" valign="middle"/>' if logo_condominio_url else ''}
+                        {logo_html}
                     </para>
                 ''', ParagraphStyle('footer', parent=styles['Normal'],
                                   alignment=TA_RIGHT, fontSize=8, fontName='Helvetica',
@@ -1730,7 +1791,15 @@ def exportar_pdf():
     except Exception as e:
         print(f"Erro ao gerar PDF: {e}")
         flash('Erro ao gerar o PDF. Verifique se há dados válidos para os filtros selecionados.', 'error')
-        return redirect(url_for('main.archive')) 
+        return redirect(url_for('main.archive'))
+    finally:
+        # Limpa arquivos temporários de logo baixados
+        for temp_path in temp_files:
+            try:
+                if temp_path and os.path.exists(temp_path):
+                    os.remove(temp_path)
+            except Exception:
+                pass
 
 @main.route('/public')
 def public_view():

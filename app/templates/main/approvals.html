@@ -154,6 +154,7 @@
                           <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                             <form method="POST" action="{{ url_for('main.aprovar_atividade', atividade_id=activity.id) }}" style="display:inline;">
+                              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                               <button type="submit" class="btn btn-success">Aprovar</button>
                             </form>
                           </div>
@@ -169,6 +170,7 @@
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                           </div>
                           <form method="POST" action="{{ url_for('main.solicitar_correcao_atividade', atividade_id=activity.id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <div class="modal-body">
                               <div class="mb-3">
                                 <label for="motivo_correcao_{{ activity.id }}" class="form-label fw-semibold">Motivo da Correção <span class="text-danger">*</span></label>
@@ -192,6 +194,7 @@
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                           </div>
                           <form method="POST" action="{{ url_for('main.recusar_atividade', atividade_id=activity.id) }}" style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <div class="modal-body">
                               <div class="mb-3">
                                 <label for="rejection_reason_{{ activity.id }}" class="form-label fw-semibold">Motivo da Recusa <span class="text-danger">*</span></label>

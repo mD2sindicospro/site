@@ -181,6 +181,7 @@
                                   <div class="modal-footer">
                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                                     <form method="POST" action="{{ url_for('main.concluir_atividade', atividade_id=activity.id) }}" style="display:inline;">
+                                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                       {% if 'property' in request.args %}
                                         <input type="hidden" name="preserve_property" value="{{ request.args.get('property', '') }}">
                                       {% endif %}
@@ -201,6 +202,7 @@
                               <div class="modal-dialog modal-dialog-centered">
                                 <div class="modal-content">
                                   <form method="POST" action="{{ url_for('main.desistir_atividade', atividade_id=activity.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     {% if 'property' in request.args %}
                                       <input type="hidden" name="preserve_property" value="{{ request.args.get('property', '') }}">
                                     {% endif %}
