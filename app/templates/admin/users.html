@@ -82,6 +82,7 @@
             </div>
             <div class="modal-body">
                 <form method="POST" action="{{ url_for('admin.manage_users') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="row g-3">
                         <div class="col-12 col-md-6">
                             <label for="name" class="form-label fw-semibold"><i class="fas fa-user me-1"></i> Nome</label>
@@ -131,6 +132,7 @@
             </div>
             <div class="modal-body">
                 <form method="POST" action="{{ url_for('admin.manage_users') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" id="edit_user_id" name="edit_user_id">
                     <div class="row g-3">
                         <div class="col-12 col-md-6">
@@ -187,6 +189,7 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                 <form method="POST" action="{{ url_for('admin.manage_users') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" id="inativar_user_id" name="inativar_user_id">
                     <button type="submit" class="btn btn-warning">Inativar</button>
                 </form>
@@ -209,6 +212,7 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                 <form method="POST" action="{{ url_for('admin.manage_users') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" id="ativar_user_id" name="ativar_user_id">
                     <button type="submit" class="btn btn-success">Ativar</button>
                 </form>
